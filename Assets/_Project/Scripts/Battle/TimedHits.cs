@@ -13,10 +13,11 @@ namespace Oiram.Battle
     /// <summary>Opções de feedback dos timed hits (F6 nas builds de desenvolvimento mostra os milissegundos).</summary>
     public static class TimingFeedback
     {
-        public static bool ShowMilliseconds;
-
-        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => ShowMilliseconds = false;
+        public static bool ShowMilliseconds
+        {
+            get => GameSettings.ShowMilliseconds;
+            set => GameSettings.ShowMilliseconds = value;
+        }
 
         public static string Milliseconds(double offsetSeconds) =>
             (offsetSeconds >= 0 ? "+" : "−") + (Math.Abs(offsetSeconds) * 1000).ToString("0") + " ms";

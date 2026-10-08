@@ -1,3 +1,4 @@
+using Oiram.Audio;
 using Oiram.World;
 
 namespace Oiram.Field
@@ -9,6 +10,11 @@ namespace Oiram.Field
 
         public override string Prompt => completesRun ? "Sair da dungeon (vitória!)" : "Sair da dungeon";
 
-        public override void Interact(FieldPlayerController player) => DungeonDirector.Instance?.Leave(completesRun);
+        public override void Interact(FieldPlayerController player)
+        {
+            if (SceneFlow.IsTransitioning) return;
+            AudioManager.Play(completesRun ? Sfx.LevelUp : Sfx.Stairs);
+            DungeonDirector.Instance?.Leave(completesRun);
+        }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Loot;
@@ -26,6 +27,9 @@ namespace Oiram.Field
 
         FieldHud hud;
         PauseMenu pauseMenu;
+        bool pauseWasOpen;
+        string lookJobId;
+        MusicTrack music = MusicTrack.Field;
 
         public static FieldDirector Instance { get; private set; }
         public FieldPlayerController Player => player;
@@ -83,9 +87,17 @@ namespace Oiram.Field
             var session = GameSession.Current;
             if (!string.IsNullOrEmpty(locationId) && session.ActiveRun == null) session.CurrentLocationId = locationId;
             PlaceAtSpawnPoint(session);
+            RefreshPlayerLook();
 
             hud.Refresh();
             var location = session.Db.Find<LocationDefinition>(locationId);
+            music = location == null ? MusicTrack.Field : location.kind switch
+            {
+                LocationKind.Town => MusicTrack.Town,
+                LocationKind.Dungeon => MusicTrack.Dungeon,
+                _ => MusicTrack.Field,
+            };
+            AudioManager.PlayMusic(music);
             if (location != null && session.ActiveRun == null)
             {
                 bool firstVisitToVale = location == session.Db.startLocation && !session.ClearedLocations.Contains(location.id);
@@ -108,8 +120,22 @@ namespace Oiram.Field
             if (cam != null) cam.Snap();
         }
 
+        /// <summary>O herói do mapa veste o chapéu e a arma do job atual do líder.</summary>
+        void RefreshPlayerLook()
+        {
+            var session = GameSession.Current;
+            if (player == null || session == null || session.Party.Count == 0) return;
+            var leader = session.Party[0];
+            if (leader.Job == null || leader.Job.id == lookJobId) return;
+            lookJobId = leader.Job.id;
+            player.SetVisual(WorldProps.LeaderVisual(player.transform, leader));
+        }
+
         void Update()
         {
+            bool pauseOpen = pauseMenu != null && pauseMenu.IsOpen;
+            if (pauseWasOpen && !pauseOpen) RefreshPlayerLook();
+            pauseWasOpen = pauseOpen;
             if (InBattle || ModalOpen) return;
             if (!pauseMenu.IsOpen && GameInput.MenuDown)
             {
@@ -144,6 +170,8 @@ namespace Oiram.Field
                 itemsRarePlus = drop.Items.Count(i => i.Rarity >= Rarity.Rare),
                 detail = string.Join(", ", drop.Items.Select(i => $"{i.Name} [{i.Rarity}]")),
             });
+            if (drop.BestRarity is Rarity loudest) AudioManager.PlayLoot(loudest);
+            else if (drop.Gold > 0) AudioManager.Play(Sfx.Coin);
             if (drop.Gold > 0) hud.Toast($"+{drop.Gold} ouro", "gold-text");
             foreach (var item in drop.Items.Where(i => !overflow.Contains(i)).OrderByDescending(i => i.Rarity))
                 hud.Toast($"{item.Name}  ({RarityInfo.Name(item.Rarity)}, Nv {item.ItemLevel})", RarityInfo.UssClass(item.Rarity));
@@ -169,6 +197,8 @@ namespace Oiram.Field
             try
             {
                 hud.SetPrompt(null);
+                AudioManager.Play(Sfx.Encounter);
+                AudioManager.StopMusic(0.3f);
                 await ScreenFader.FadeOut(0.35f, ct);
 
                 var fieldScene = gameObject.scene;
@@ -205,6 +235,7 @@ namespace Oiram.Field
 
                 if (fieldRoot) fieldRoot.SetActive(true);
                 hud.SetVisible(true);
+                if (outcome.Result != BattleResult.Defeat || DefeatHandler == null) AudioManager.PlayMusic(music, 0.6f);
 
                 var session = GameSession.Current;
                 bool handled = false;

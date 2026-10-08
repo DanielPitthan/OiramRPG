@@ -2,7 +2,9 @@
     "name": "OiramRPG.Editor",
     "rootNamespace": "Oiram.EditorTools",
     "references": [
-        "OiramRPG"
+        "OiramRPG",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
     ],
     "includePlatforms": [
         "Editor"

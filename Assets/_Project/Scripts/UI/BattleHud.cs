@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Inventory;
@@ -36,9 +37,23 @@ namespace Oiram.UI
             public float Born;
             public float Life;
             public float Rise;
+            public float Pop;
         }
 
-        VisualElement root, turnStrip, partyPanel, commandPanel, popupLayer, tagLayer, chargeBox, chargeFill, overlay;
+        /// <summary>Anel que encolhe até o círculo-alvo exatamente no impacto (ajuda visual do timed hit).</summary>
+        sealed class TimingRing
+        {
+            public VisualElement Outer, Target;
+            public TimedHitWindow Window;
+            public Vector3 World;
+            public double Start, Impact;
+            public float FinishedAt = -1f;
+        }
+
+        const float RingSize = 64f;
+        const float RingStartScale = 3.4f;
+
+        VisualElement root, turnStrip, partyPanel, commandPanel, popupLayer, tagLayer, ringLayer, chargeBox, chargeFill, overlay;
         Label banner, targetInfo, energyLabel, commandTitle, description;
         Camera cam;
         GameSession session;
@@ -46,9 +61,12 @@ namespace Oiram.UI
         readonly Dictionary<BattleUnit, PartyCard> cards = new();
         readonly Dictionary<BattleUnit, EnemyTag> tags = new();
         readonly List<ActivePopup> popups = new();
+        readonly List<TimingRing> rings = new();
         int bannerToken;
 
         public MenuList Menu { get; private set; }
+        /// <summary>Algum anel de timing na tela (ferramentas de teste/tour).</summary>
+        public bool RingVisible => rings.Count > 0;
 
         public static BattleHud Create(Transform parent, Camera camera)
         {
@@ -89,6 +107,10 @@ namespace Oiram.UI
             UiKit.Text(chargeBox, "Segure e solte quando a barra brilhar!", "small");
             chargeFill = UiKit.Bar(chargeBox, "bar-charge");
             UiKit.Show(chargeBox, false);
+
+            ringLayer = UiKit.El(root);
+            ringLayer.style.position = Position.Absolute;
+            ringLayer.style.left = 0; ringLayer.style.top = 0; ringLayer.style.right = 0; ringLayer.style.bottom = 0;
 
             popupLayer = UiKit.El(root);
             popupLayer.style.position = Position.Absolute;
@@ -224,7 +246,8 @@ namespace Oiram.UI
         {
             if (string.IsNullOrEmpty(text)) return;
             var label = UiKit.Text(popupLayer, text, "popup", cssClass);
-            var popup = new ActivePopup { Label = label, World = world, Born = Time.time, Life = life, Rise = rise };
+            float pop = cssClass switch { "crit" => 2.2f, "damage" or "timing" => 1.7f, "heal" => 1.4f, _ => 1f };
+            var popup = new ActivePopup { Label = label, World = world, Born = Time.time, Life = life, Rise = rise, Pop = pop };
             popups.Add(popup);
             Place(label, world, 0f);
         }
@@ -259,13 +282,96 @@ namespace Oiram.UI
                 }
                 Place(p.Label, p.World, Tween.EaseOutQuad(Mathf.Min(1f, age * 2f)) * p.Rise + 30f);
                 p.Label.style.opacity = age < 0.7f ? 1f : 1f - (age - 0.7f) / 0.3f;
+                // "Estoura" grande e assenta (números com peso).
+                float since = Time.time - p.Born;
+                float scale = p.Pop > 1f && since < 0.16f ? Mathf.Lerp(p.Pop, 1f, Tween.EaseOutQuad(since / 0.16f)) : 1f;
+                p.Label.style.scale = new Scale(new Vector3(scale, scale, 1f));
             }
+
+            UpdateRings();
 
             if (viewOf == null) return;
             foreach (var (unit, tag) in tags)
             {
                 var view = viewOf(unit);
                 if (view != null && unit.IsAlive) Place(tag.Root, view.Top + Vector3.up * 0.15f, 40f);
+            }
+        }
+
+        // ---------- Anel de timing ----------
+
+        /// <summary>
+        /// Mostra o anel sobre <paramref name="world"/>; ele encosta no alvo em <paramref name="visualImpactAt"/>
+        /// (tempo de <see cref="GameInput.Now"/>) e some quando a janela fecha, colorido pelo resultado.
+        /// </summary>
+        public void ShowTimingRing(TimedHitWindow window, Vector3 world, double visualImpactAt, bool block)
+        {
+            var ring = new TimingRing
+            {
+                Target = UiKit.El(ringLayer, "timing-target"),
+                Outer = UiKit.El(ringLayer, "timing-ring"),
+                Window = window,
+                World = world,
+                Start = GameInput.Now,
+                Impact = visualImpactAt,
+            };
+            if (block)
+            {
+                ring.Target.AddToClassList("block");
+                ring.Outer.AddToClassList("block");
+            }
+            rings.Add(ring);
+            PlaceRing(ring.Target, world, RingSize);
+            PlaceRing(ring.Outer, world, RingSize * RingStartScale);
+        }
+
+        void PlaceRing(VisualElement el, Vector3 world, float size)
+        {
+            if (cam == null || root.panel == null) return;
+            Vector2 p = RuntimePanelUtils.CameraTransformWorldToPanel(root.panel, world, cam);
+            el.style.width = size;
+            el.style.height = size;
+            el.style.left = p.x - size * 0.5f;
+            el.style.top = p.y - size * 0.5f;
+        }
+
+        void UpdateRings()
+        {
+            double now = GameInput.Now;
+            for (int i = rings.Count - 1; i >= 0; i--)
+            {
+                var r = rings[i];
+                if (r.FinishedAt < 0f && r.Window.IsClosed(now))
+                {
+                    r.FinishedAt = Time.unscaledTime;
+                    string result = r.Window.HasInput ? r.Window.Result.ToString().ToLowerInvariant() : "miss";
+                    r.Outer.AddToClassList(result);
+                    r.Target.AddToClassList(result);
+                }
+
+                if (r.FinishedAt >= 0f)
+                {
+                    float k = (Time.unscaledTime - r.FinishedAt) / 0.25f;
+                    if (k >= 1f)
+                    {
+                        r.Outer.RemoveFromHierarchy();
+                        r.Target.RemoveFromHierarchy();
+                        rings.RemoveAt(i);
+                        continue;
+                    }
+                    PlaceRing(r.Outer, r.World, RingSize * (1f + k * 0.6f));
+                    PlaceRing(r.Target, r.World, RingSize);
+                    r.Outer.style.opacity = 1f - k;
+                    r.Target.style.opacity = 1f - k;
+                    continue;
+                }
+
+                double span = Math.Max(0.01, r.Impact - r.Start);
+                float t = Mathf.Clamp01((float)((now - r.Start) / span));
+                r.Outer.EnableInClassList("ready", t >= 1f);
+                PlaceRing(r.Outer, r.World, RingSize * Mathf.Lerp(RingStartScale, 1f, t));
+                PlaceRing(r.Target, r.World, RingSize);
+                r.Outer.style.opacity = Mathf.Lerp(0.35f, 1f, t);
             }
         }
 
@@ -308,7 +414,11 @@ namespace Oiram.UI
                 foreach (var item in summary.Items.OrderByDescending(i => i.Rarity))
                 {
                     var line = UiKit.El(scroll.contentContainer, "loot-line");
-                    var name = UiKit.Text(line, $"{item.Name}  —  {RarityInfo.Name(item.Rarity)} · Nv {item.ItemLevel} · {RarityInfo.SlotName(item.Slot)}");
+                    var head = UiKit.El(line, "row");
+                    var icon = ItemIcon.For(item, 32f);
+                    icon.style.marginRight = 8;
+                    head.Add(icon);
+                    var name = UiKit.Text(head, $"{item.Name}  —  {RarityInfo.Name(item.Rarity)} · Nv {item.ItemLevel} · {RarityInfo.SlotName(item.Slot)}");
                     UiKit.SetRarity(name, item.Rarity);
                     if (item.Affixes.Count > 0)
                         UiKit.Text(line, string.Join("  ·  ", item.Affixes.Select(a => StatText.Describe(a.Modifier))), "loot-affixes");

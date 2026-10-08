@@ -5,17 +5,31 @@ using System.Linq;
 using Oiram.Characters;
 using Oiram.Inventory;
 using Oiram.Loot;
+using Oiram.World;
 using UnityEngine;
 
 namespace Oiram.Core
 {
+    /// <summary>Onde o "Continuar" retoma a partida.</summary>
+    public enum ResumePoint
+    {
+        /// <summary>Campo/cidade em <see cref="SaveData.location"/>, no ponto <see cref="SaveData.spawn"/> (pousada).</summary>
+        Location,
+        WorldMap,
+        /// <summary>Começo do andar salvo em <see cref="SaveData.run"/>.</summary>
+        Dungeon,
+    }
+
     [Serializable]
     public sealed class SaveData
     {
-        public int version = 1;
+        public int version = 2;
         public string savedAt;
+        public ResumePoint resume;
         public string location;
         public string spawn;
+        public bool hasRun;
+        public RunData run = new();
         public int gold;
         public int energy;
         public int worldSeed;
@@ -27,6 +41,15 @@ namespace Oiram.Core
         public List<string> clearedLocations = new();
         public List<CountData> bestTiers = new();
         public List<StockData> shopStock = new();
+    }
+
+    /// <summary>Descida em andamento (salva no começo de cada andar).</summary>
+    [Serializable]
+    public sealed class RunData
+    {
+        public string location;
+        public int tier, level, seed, floors, floor;
+        public int battlesWon, itemsFound, goldFound;
     }
 
     [Serializable]
@@ -80,24 +103,34 @@ namespace Oiram.Core
         public List<ItemData> items = new();
     }
 
-    /// <summary>Salva/carrega a partida em JSON (ids estáveis dos assets). Usado pela pousada e pela tela de título.</summary>
+    /// <summary>
+    /// Salva/carrega a partida em JSON (ids estáveis dos assets). A pousada salva na cidade; o jogo também salva
+    /// sozinho no mapa-múndi e no começo de cada andar de dungeon.
+    /// </summary>
     public static class SaveSystem
     {
         /// <summary>Caminho alternativo (testes).</summary>
         public static string PathOverride { get; set; }
         public static string FilePath => PathOverride ?? Path.Combine(Application.persistentDataPath, "save.json");
         public static bool HasSave => File.Exists(FilePath);
+        /// <summary>Salvamento automático (desligado em batchmode para os testes não mexerem no save do jogador).</summary>
+        public static bool AutoSaveEnabled { get; set; } = true;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => PathOverride = null;
+        static void ResetStatics()
+        {
+            PathOverride = null;
+            AutoSaveEnabled = !Application.isBatchMode;
+        }
 
         // ------------------------------------------------------------------ captura
 
-        public static SaveData Capture(GameSession s, string spawnId = null)
+        public static SaveData Capture(GameSession s, string spawnId = null, ResumePoint resume = ResumePoint.Location)
         {
             var data = new SaveData
             {
                 savedAt = DateTime.Now.ToString("s"),
+                resume = resume,
                 location = s.CurrentLocationId,
                 spawn = spawnId,
                 gold = s.Inventory.Gold,
@@ -126,6 +159,22 @@ namespace Oiram.Core
                 foreach (var p in m.AllProgress())
                     md.jobs.Add(new JobData { id = p.Job.id, total = p.TotalJp, available = p.AvailableJp, learned = p.Learned.Select(a => a.id).ToList() });
                 data.party.Add(md);
+            }
+            if (resume == ResumePoint.Dungeon && s.ActiveRun is DungeonRun run)
+            {
+                data.hasRun = true;
+                data.run = new RunData
+                {
+                    location = run.Location.id,
+                    tier = (int)run.Tier,
+                    level = run.Level,
+                    seed = run.Seed,
+                    floors = run.Floors,
+                    floor = run.Floor,
+                    battlesWon = run.BattlesWon,
+                    itemsFound = run.ItemsFound,
+                    goldFound = run.GoldFound,
+                };
             }
             foreach (var (town, items) in s.ShopStock)
                 data.shopStock.Add(new StockData
@@ -188,8 +237,27 @@ namespace Oiram.Core
                 s.ShopStockVersion[stock.town] = stock.version;
             }
             s.SetEnergy(data.energy);
+            s.ActiveRun = RestoreRun(data, db);
             return s;
         }
+
+        static DungeonRun RestoreRun(SaveData data, GameDatabase db)
+        {
+            if (data.resume != ResumePoint.Dungeon || !data.hasRun || data.run == null) return null;
+            var location = db.Find<LocationDefinition>(data.run.location);
+            if (location == null || !location.IsDungeon) return null;
+            return new DungeonRun(location, (DifficultyTier)data.run.tier, data.run.level, data.run.seed, data.run.floors)
+            {
+                Floor = Math.Max(0, Math.Min(data.run.floor, data.run.floors - 1)),
+                BattlesWon = data.run.battlesWon,
+                ItemsFound = data.run.itemsFound,
+                GoldFound = data.run.goldFound,
+            };
+        }
+
+        /// <summary>Onde retomar: dungeon só se a descida pôde ser reconstruída.</summary>
+        public static ResumePoint ResumeOf(SaveData data, GameSession restored) =>
+            data.resume == ResumePoint.Dungeon && restored.ActiveRun == null ? ResumePoint.WorldMap : data.resume;
 
         static ItemInstance FromData(ItemData d, GameDatabase db)
         {
@@ -205,9 +273,9 @@ namespace Oiram.Core
 
         // ------------------------------------------------------------------ arquivo
 
-        public static void Save(GameSession session, string spawnId = null)
+        public static void Save(GameSession session, string spawnId = null, ResumePoint resume = ResumePoint.Location)
         {
-            var json = JsonUtility.ToJson(Capture(session, spawnId), prettyPrint: true);
+            var json = JsonUtility.ToJson(Capture(session, spawnId, resume), prettyPrint: true);
             var path = FilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             var temp = path + ".tmp";
@@ -216,26 +284,61 @@ namespace Oiram.Core
             File.Move(temp, path);
         }
 
-        public static GameSession Load(GameDatabase db)
+        /// <summary>Salvamento automático: nunca derruba o jogo por erro de disco. Devolve true se gravou.</summary>
+        public static bool AutoSave(GameSession session, ResumePoint resume)
+        {
+            if (!AutoSaveEnabled || session == null) return false;
+            try
+            {
+                Save(session, null, resume);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Salvamento automático falhou: {e.Message}");
+                return false;
+            }
+        }
+
+        public static SaveData LoadData()
         {
             if (!HasSave) return null;
-            var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath));
+            try { return JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath)); }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Save ilegível: {e.Message}");
+                return null;
+            }
+        }
+
+        public static GameSession Load(GameDatabase db)
+        {
+            var data = LoadData();
             return data == null ? null : Restore(data, db);
         }
 
-        public static string Describe()
+        public static string Describe(GameDatabase db = null)
         {
             if (!HasSave) return null;
             try
             {
                 var data = JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath));
                 var levels = string.Join("/", data.party.Select(p => p.level));
-                return $"Salvo em {data.savedAt?.Replace('T', ' ')} · níveis {levels} · {data.gold} ouro";
+                string where = data.resume switch
+                {
+                    ResumePoint.Dungeon when data.hasRun => $"{Name(db, data.run.location)}, andar {data.run.floor + 1}",
+                    ResumePoint.WorldMap => "mapa-múndi",
+                    _ => Name(db, data.location),
+                };
+                return $"{where} · níveis {levels} · {data.gold} ouro · {data.savedAt?.Replace('T', ' ')}";
             }
             catch (Exception)
             {
                 return "Save encontrado";
             }
         }
+
+        static string Name(GameDatabase db, string locationId) =>
+            db?.Find<LocationDefinition>(locationId)?.displayName ?? locationId ?? "?";
     }
 }

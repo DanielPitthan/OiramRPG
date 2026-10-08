@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Oiram.Audio;
 using Oiram.Characters;
 using Oiram.Core;
 using Oiram.Field;
@@ -94,11 +95,14 @@ namespace Oiram.UI
 
         void Toast(string text, string css = null) => Director.ShowToast(text, css);
 
+        static void Denied() => AudioManager.Play(Sfx.Cancel, 0.8f, 0.8f);
+
         void Update()
         {
             if (!IsOpen || Time.frameCount == openedFrame) return;
             if (GameInput.CancelDown || GameInput.MenuDown)
             {
+                AudioManager.Play(Sfx.Cancel);
                 Close();
                 return;
             }
@@ -118,6 +122,7 @@ namespace Oiram.UI
             var nav = GameInput.Nav;
             if (nav.y == 0 || count == 0) return false;
             index = Wrap(index - nav.y, count);
+            AudioManager.Play(Sfx.Cursor);
             return true;
         }
 
@@ -132,10 +137,15 @@ namespace Oiram.UI
             var item = Consumables[index];
             if (ShopService.BuyConsumable(S, item))
             {
+                AudioManager.Play(Sfx.Coin);
                 Toast($"Comprou {item.displayName} por {item.price} ouro.", "gold-text");
                 PlaytestLog.Note("comprou", $"{item.displayName} por {item.price}");
             }
-            else Toast("Ouro insuficiente.", "bad");
+            else
+            {
+                Denied();
+                Toast("Ouro insuficiente.", "bad");
+            }
             return true;
         }
 
@@ -146,7 +156,7 @@ namespace Oiram.UI
             for (int i = 0; i < Consumables.Count; i++)
             {
                 var c = Consumables[i];
-                ItemViews.Row(list, $"{c.displayName}  (tem {S.Inventory.Count(c)})", $"{c.price} ouro", i == index, ShopService.CanAfford(S, c.price));
+                ItemViews.Row(list, $"{c.displayName}  (tem {S.Inventory.Count(c)})", $"{c.price} ouro", i == index, ShopService.CanAfford(S, c.price), icon: ItemIcon.For(c, 30f));
             }
             var detail = UiKit.El(body, "panel", "column");
             if (Consumables.Count > 0)
@@ -169,12 +179,14 @@ namespace Oiram.UI
             {
                 sellMode = !sellMode;
                 index = 0;
+                AudioManager.Play(Sfx.Cursor);
                 return true;
             }
             var nav = GameInput.Nav;
             if (nav.x != 0)
             {
                 member = Wrap(member + nav.x, S.Party.Count);
+                AudioManager.Play(Sfx.Cursor);
                 return true;
             }
             var items = CurrentList;
@@ -186,6 +198,7 @@ namespace Oiram.UI
             if (sellMode && (GameInput.ConfirmDown || GameInput.SecondaryDown))
             {
                 int gold = S.Inventory.Sell(item);
+                AudioManager.Play(Sfx.Coin);
                 Toast($"Vendeu {item.Name} por {gold} ouro.", "gold-text");
                 PlaytestLog.Note("vendeu", $"{item.Name} [{item.Rarity}] por {gold}");
                 index = Mathf.Clamp(index, 0, Mathf.Max(0, S.Inventory.Items.Count - 1));
@@ -196,10 +209,15 @@ namespace Oiram.UI
                 int price = ShopService.BuyPrice(item, S.Balance);
                 if (ShopService.BuyItem(S, townId, item))
                 {
+                    AudioManager.Play(Sfx.Coin);
                     Toast($"Comprou {item.Name} por {price} ouro.", RarityInfo.UssClass(item.Rarity));
                     PlaytestLog.Note("comprou", $"{item.Name} [{item.Rarity}] por {price}");
                 }
-                else Toast(S.Inventory.IsFull ? "Mochila cheia." : "Ouro insuficiente.", "bad");
+                else
+                {
+                    Denied();
+                    Toast(S.Inventory.IsFull ? "Mochila cheia." : "Ouro insuficiente.", "bad");
+                }
                 index = Mathf.Clamp(index, 0, Mathf.Max(0, ShopService.BlacksmithStock(S, townId).Count - 1));
                 return true;
             }
@@ -241,9 +259,12 @@ namespace Oiram.UI
             var item = ShopService.Gamble(S, GambleSlots[index], rng);
             if (item == null)
             {
+                Denied();
                 Toast(S.Inventory.IsFull ? "Mochila cheia." : "Ouro insuficiente.", "bad");
                 return true;
             }
+            AudioManager.Play(Sfx.Coin);
+            AudioManager.PlayLoot(item.Rarity);
             lastGamble = item;
             Toast($"Item misterioso: {item.Name} ({RarityInfo.Name(item.Rarity)})!", RarityInfo.UssClass(item.Rarity));
             PlaytestLog.Note("aposta", $"{item.Name} [{item.Rarity}]");
@@ -289,13 +310,16 @@ namespace Oiram.UI
                 int price = ShopService.InnPrice(S);
                 if (!ShopService.Rest(S))
                 {
+                    Denied();
                     Toast("Ouro insuficiente para o quarto.", "bad");
                     return true;
                 }
+                AudioManager.Play(Sfx.Heal);
                 Toast($"A party descansou ({price} ouro).", "good");
                 PlaytestLog.Note("descanso", $"pousada {price}");
             }
             SaveSystem.Save(S, "pousada");
+            AudioManager.Play(Sfx.Save);
             Toast("Jogo salvo!", "gold-text");
             PlaytestLog.Note("salvou", S.CurrentLocationId);
             return true;

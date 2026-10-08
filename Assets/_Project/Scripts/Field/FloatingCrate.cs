@@ -1,4 +1,5 @@
 using System;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Loot;
@@ -30,6 +31,7 @@ namespace Oiram.Field
         {
             if (used) return;
             MarkUsed();
+            AudioManager.Play(Sfx.Bump);
             var session = GameSession.Current;
             session.ClearedFieldObjects.Add(uniqueId);
             _ = Tween.Arc(visual, visual.position, 0.4f, 0.2f, destroyCancellationToken);

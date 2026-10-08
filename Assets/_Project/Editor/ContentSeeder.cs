@@ -162,49 +162,83 @@ namespace Oiram.EditorTools
         }
     }
 
-    /// <summary>Gera materiais de cor chapada como assets (para as cenas "assadas" referenciarem).</summary>
+    /// <summary>
+    /// Materiais e malhas gerados por código viram assets ao "assar" as cenas (cenas só guardam referências a assets).
+    /// Também cria os materiais-base em Resources (garantem os shaders no build).
+    /// </summary>
     public static class EditorPalette
     {
-        public const string BaseMaterialPath = "Assets/_Project/Resources/Materials/OiramLit.mat";
+        const string BaseFolder = "Assets/_Project/Resources/Materials";
         const string Folder = "Assets/_Project/Materials/Generated";
+        const string MeshFolder = Folder + "/Meshes";
 
-        static readonly Dictionary<Color32, Material> cache = new();
-
-        public static Material BaseMaterial()
+        static readonly (string file, string shader)[] Bases =
         {
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(BaseMaterialPath);
-            if (mat != null) return mat;
-            EditorFolders.Ensure("Assets/_Project/Resources/Materials");
-            mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "OiramLit", color = Color.white };
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.12f);
-            AssetDatabase.CreateAsset(mat, BaseMaterialPath);
+            ("OiramToon", "Oiram/Toon"),
+            ("OiramGlow", "Oiram/Glow"),
+            ("OiramWater", "Oiram/Water"),
+            ("OiramSky", "Oiram/Sky"),
+        };
+
+        public static void EnsureBaseMaterials()
+        {
+            EditorFolders.Ensure(BaseFolder);
+            foreach (var (file, shaderName) in Bases)
+            {
+                string path = $"{BaseFolder}/{file}.mat";
+                var shader = Shader.Find(shaderName);
+                if (shader == null)
+                {
+                    Debug.LogError($"[OiramRPG] Shader '{shaderName}' não encontrado (erro de compilação?).");
+                    continue;
+                }
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (mat == null) AssetDatabase.CreateAsset(new Material(shader) { name = file }, path);
+                else if (mat.shader != shader) mat.shader = shader;
+            }
+            // O material URP/Lit antigo não é mais usado.
+            if (AssetDatabase.LoadAssetAtPath<Material>($"{BaseFolder}/OiramLit.mat") != null) AssetDatabase.DeleteAsset($"{BaseFolder}/OiramLit.mat");
+        }
+
+        static string Safe(string name) => string.Concat(name.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_'));
+
+        static Material PersistMaterial(Material mat)
+        {
+            EditorFolders.Ensure(Folder);
+            string path = $"{Folder}/{Safe(mat.name)}.mat";
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+            AssetDatabase.CreateAsset(mat, path);
             return mat;
         }
 
-        public static Material Get(Color color)
+        static Mesh PersistMesh(Mesh mesh)
         {
-            Color32 key = color;
-            if (cache.TryGetValue(key, out var cached) && cached != null) return cached;
-
-            string path = $"{Folder}/C_{ColorUtility.ToHtmlStringRGB(color)}.mat";
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (mat == null)
-            {
-                EditorFolders.Ensure(Folder);
-                mat = new Material(BaseMaterial()) { name = System.IO.Path.GetFileNameWithoutExtension(path), color = color };
-                AssetDatabase.CreateAsset(mat, path);
-            }
-            cache[key] = mat;
-            return mat;
+            EditorFolders.Ensure(MeshFolder);
+            string path = $"{MeshFolder}/{Safe(mesh.name)}.asset";
+            var existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing != null) return existing;
+            AssetDatabase.CreateAsset(mesh, path);
+            return mesh;
         }
 
         public static void Begin()
         {
-            cache.Clear();
-            BaseMaterial();
-            Palette.Override = Get;
+            EnsureBaseMaterials();
+            // Recria tudo do zero: as cenas são reconstruídas logo em seguida.
+            if (AssetDatabase.IsValidFolder(Folder)) AssetDatabase.DeleteAsset(Folder);
+            Palette.ClearCache();
+            MeshLibrary.ClearCache();
+            Palette.Persist = PersistMaterial;
+            MeshLibrary.Persist = PersistMesh;
         }
 
-        public static void End() => Palette.Override = null;
+        public static void End()
+        {
+            Palette.Persist = null;
+            MeshLibrary.Persist = null;
+            Palette.ClearCache();
+            MeshLibrary.ClearCache();
+        }
     }
 }

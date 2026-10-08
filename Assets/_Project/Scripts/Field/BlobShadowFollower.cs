@@ -25,10 +25,10 @@ namespace Oiram.Field
             {
                 shadow.gameObject.SetActive(true);
                 shadow.position = hit.point + Vector3.up * 0.02f;
-                shadow.rotation = Quaternion.identity;
+                shadow.rotation = Quaternion.Euler(90f, 0f, 0f); // quad deitado no chão
                 float height = transform.position.y - hit.point.y;
                 float k = Mathf.Clamp(1f - height * 0.12f, 0.45f, 1f);
-                shadow.localScale = new Vector3(baseScale.x * k, baseScale.y, baseScale.z * k);
+                shadow.localScale = new Vector3(baseScale.x * k, baseScale.y * k, baseScale.z);
             }
             else shadow.gameObject.SetActive(false);
         }

@@ -6,15 +6,18 @@ RPG em Unity 6 com **exploração e batalhas por turnos estilo Super Mario RPG**
 Conteúdo atual: o **Vale** (introdução com o Golem), um **mapa-múndi**, a **Vila Ventura** (lojas, pousada com save
 e um baú escondido com uma Relíquia) e **três dungeons com mapas aleatórios** que escalam com o nível da party
 em quatro dificuldades. Três heróis, cinco jobs, onze tipos de inimigo, quatro chefes e loot procedural.
-A arte é provisória (primitivas low-poly).
+Visual **toon com contorno** e música/efeitos sonoros **gerados por código** — não há arquivos de modelo, textura de
+personagem nem áudio: tudo é montado pelo jogo (shaders próprios, malhas geradas, chiptune).
 
 | Exploração | Batalha | Vitória e loot |
 |---|---|---|
 | ![Mapa](Docs/screenshots/mapa.png) | ![Batalha](Docs/screenshots/batalha.png) | ![Vitória](Docs/screenshots/vitoria.png) |
-| **Inventário** | **Jobs** | **Mapa-múndi** |
-| ![Inventário](Docs/screenshots/inventario.png) | ![Jobs](Docs/screenshots/jobs.png) | ![Mundo](Docs/screenshots/mundo.png) |
+| **Inventário** | **Título** | **Mapa-múndi** |
+| ![Inventário](Docs/screenshots/inventario.png) | ![Título](Docs/screenshots/titulo.png) | ![Mundo](Docs/screenshots/mundo.png) |
 | **Vila e baú escondido** | **Ferreiro** | **Dungeon (aleatória)** |
 | ![Vila](Docs/screenshots/vila.png) | ![Ferreiro](Docs/screenshots/ferreiro.png) | ![Dungeon](Docs/screenshots/dungeon.png) |
+| **Anel de timing** | **Itens fora da batalha** | **Opções** |
+| ![Anel](Docs/screenshots/anel.png) | ![Itens](Docs/screenshots/itens.png) | ![Opções](Docs/screenshots/opcoes.png) |
 
 ## Como abrir e jogar
 
@@ -39,7 +42,9 @@ A arte é provisória (primitivas low-poly).
 
 **Timed hits:** aperte Confirmar no instante do impacto do seu ataque (BOM ×1.25, PERFEITO ×1.5) e
 no impacto do ataque inimigo para defender (dano ×0.5 / ×0.25). Só o primeiro aperto conta.
-A *Investida* do Guardião é de segurar e soltar quando a barra brilhar; o *Golpe Duplo* pede um aperto por golpe.
+Um **anel** encolhe sobre o alvo e encosta no círculo exatamente no impacto (dourado no ataque, azul na defesa) —
+dá para desligar em **Opções**. A *Investida* do Guardião é de segurar e soltar quando a barra brilhar; o *Golpe Duplo*
+pede um aperto por golpe.
 
 **Atalhos de teste** (editor e development builds): F1 = 10 itens aleatórios · F2 = +100 ouro ·
 F3 = cura total · F4 = +100 JP · F5 = +1 nível · F6 = mostrar em milissegundos o quão cedo/tarde foi cada timed hit.
@@ -57,6 +62,38 @@ F3 = cura total · F4 = +100 JP · F5 = +1 nível · F6 = mostrar em milissegund
 - **Loot:** Comum → Lendário (0–4 afixos), afixos com tiers liberados pelo nível do item, Achado Mágico,
   nomes com concordância ("Espada Afiada do Tigre", "Elmo Robusto da Coruja"). Afixos especiais conversam
   com os timed hits: *Preciso* (janela maior), *Flamejante* (Perfeito queima), *do Reflexo* (defesa perfeita reflete dano).
+
+## Visual
+
+- **Shaders próprios** (`Assets/_Project/Shaders`): `Oiram/Toon` (luz em duas faixas com sombra azulada, brilho de borda,
+  destaque especular opcional, tochas em faixas, emissão para o bloom e **contorno** por casco invertido com normais
+  suavizadas), `Oiram/Water` (ondinhas e brilhos animados), `Oiram/Sky` (céu em degradê) e `Oiram/Glow` (partículas, halos, sombras suaves).
+- **Pós-processamento** (URP): bloom leve, cores mais vivas, tonemapping neutro, vinheta; MSAA 4× no perfil PC.
+- **Personagens chibi** com rosto (olhos com brilho, bochechas), **chapéu e arma do job** (elmo do Guardião, chapéu de mago
+  da Arcanista, capuz do Clérigo, bandana do Ladino, boné do Aprendiz) e um rig procedural: andar, piscar, respirar, pular
+  e erguer a arma nos golpes. O herói do mapa troca de visual quando o líder muda de job.
+- **Inimigos** redesenhados e animados (asas batendo, pernas de aranha, mandíbula do esqueleto, olhos e núcleos brilhando).
+- **Terreno** numa malha só: borda de grama, laterais em camadas que escurecem para baixo, sombra nos cantos junto a
+  paredes, tufos e flores; água com espuma na margem; cristais brilhando nas dungeons. Casas com telhado, chaminé e janelas
+  acesas; barracas com toldo listrado; tochas com chama, halo, brasas e luz tremulando.
+- **Partículas** por código: faíscas nos golpes, estrelas no PERFEITO/crítico, fumaça ao derrotar inimigos, brilhos
+  subindo na cura e no loot, poeira nos pulos, rastro nas magias.
+- **Interface**: fonte [Fredoka](https://github.com/google/fonts/tree/main/ofl/fredoka) (licença OFL, em
+  `Resources/UI/Fonts`), molduras 9-slice geradas por código (`OiramRPG ▸ Interface ▸ Gerar molduras da UI`), barras com
+  brilho, **ícones de item desenhados com vetores** por categoria e raridade, logo animado no título.
+
+## Game feel
+
+- **Áudio procedural** (`Scripts/Audio`): um sintetizador chiptune gera ~30 efeitos (golpes, defesas, menus, baús,
+  moedas, subir de nível...), um *jingle* de loot por raridade (Raro+ toca quando o item cai) e 7 músicas em loop
+  (título, Vale, mapa-múndi, valsa da vila, dungeon com eco, batalha e chefe). As músicas são compostas a partir de
+  progressões de acordes escritas à mão e melodias geradas com semente fixa — sempre as mesmas.
+  Para ouvir fora do jogo: **OiramRPG ▸ Áudio ▸ Exportar WAVs** (grava em `Builds/Audio`, com pico/RMS de cada som).
+- **Impacto:** no PERFEITO o jogo congela por um instante (*hit-stop*), solta estrelas e treme a câmera; críticos e golpes
+  de chefe tremem mais; os números de dano "estouram" e assentam. Poeira e som ao cair de um pulo.
+- **Menu de pausa** com 5 abas: Equipe · Inventário · **Itens** (Poção, Éter e Pena fora da batalha — o item não é gasto
+  se não fizer efeito) · Jobs · **Opções** (volume da música e dos efeitos, anel de timing, mostrar ms do timing).
+  As opções ficam salvas entre sessões.
 
 ## Mundo, cidade e dungeons
 
@@ -79,7 +116,8 @@ F3 = cura total · F4 = +100 JP · F5 = +1 nível · F6 = mostrar em milissegund
 
   O último andar tem uma fogueira e o chefe; vencer libera o tesouro e o portal de saída. Se a party cair,
   acorda no mapa-múndi (fica com o loot coletado). O portal do primeiro andar abandona a descida.
-- **Save:** na pousada; a tela de título mostra **Continuar** quando há save.
+- **Save:** na pousada e **automático** no mapa-múndi e no começo de cada andar de dungeon. **Continuar** (título)
+  volta para onde parou — inclusive para o mesmo andar, com o mesmo mapa.
 
 ## Onde fica cada coisa
 
@@ -147,5 +185,5 @@ Os testes PlayMode precisam das cenas no Build Settings (rode o construtor uma v
 
 ## Próximos passos sugeridos
 
-Save/load (o `ItemInstance` já tem id e referências estáveis), cidade e lojas, mais jobs e áreas,
-chefes com mecânicas, arte low-poly real + animações + áudio e localização.
+Playtest humano (calibrar os timed hits com os logs), mais cidades e dungeons, chefes com mecânicas,
+arte low-poly real + animações e localização.

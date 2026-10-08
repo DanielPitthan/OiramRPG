@@ -78,5 +78,32 @@ namespace Oiram.World
         }
 
         public static void ToWorldMap() => LoadScene(WorldMapScene);
+
+        /// <summary>"Continuar" da tela de título: carrega o save e volta para onde parou. False se não há save válido.</summary>
+        public static bool Continue(GameDatabase db)
+        {
+            var data = SaveSystem.LoadData();
+            if (data == null) return false;
+            var session = SaveSystem.Restore(data, db);
+            GameSession.StartNew(session);
+            var resume = SaveSystem.ResumeOf(data, session);
+            PlaytestLog.Note("continuar", $"{resume} {session.CurrentLocationId}");
+            switch (resume)
+            {
+                case ResumePoint.Dungeon:
+                    session.CurrentLocationId = session.ActiveRun.Location.id;
+                    LoadScene(session.ActiveRun.Location.sceneName);
+                    break;
+                case ResumePoint.WorldMap:
+                    session.ActiveRun = null;
+                    ToWorldMap();
+                    break;
+                default:
+                    var location = db.Find<LocationDefinition>(session.CurrentLocationId) ?? db.startLocation;
+                    EnterLocation(location, session.SpawnPointId ?? "pousada");
+                    break;
+            }
+            return true;
+        }
     }
 }

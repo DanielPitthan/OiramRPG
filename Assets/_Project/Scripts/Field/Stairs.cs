@@ -1,3 +1,4 @@
+using Oiram.Audio;
 using Oiram.World;
 
 namespace Oiram.Field
@@ -7,6 +8,11 @@ namespace Oiram.Field
     {
         public override string Prompt => "Descer para o próximo andar";
 
-        public override void Interact(FieldPlayerController player) => DungeonDirector.Instance?.Descend();
+        public override void Interact(FieldPlayerController player)
+        {
+            if (SceneFlow.IsTransitioning) return;
+            AudioManager.Play(Sfx.Stairs);
+            DungeonDirector.Instance?.Descend();
+        }
     }
 }

@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 namespace Oiram.EditorTools
@@ -47,6 +48,9 @@ namespace Oiram.EditorTools
             if (AssetDatabase.LoadAssetAtPath<GameDatabase>(ContentSeeder.DatabasePath) == null) ContentSeeder.Seed(overwrite: false);
             else ContentSeeder.Sync();
             EditorFolders.Ensure(ScenesFolder);
+            ConfigurePipeline();
+            UiSkinGenerator.Generate();
+            dayProfile = dungeonProfile = null;
             EditorPalette.Begin();
             try
             {
@@ -81,14 +85,93 @@ namespace Oiram.EditorTools
         {
             var go = new GameObject("Sun");
             go.transform.SetParent(parent, false);
-            go.transform.rotation = Quaternion.Euler(52f, -35f, 0f);
+            go.transform.rotation = Quaternion.Euler(50f, -35f, 0f);
             var light = go.AddComponent<Light>();
             light.type = LightType.Directional;
-            light.color = new Color(1f, 0.96f, 0.88f);
-            light.intensity = 1.15f;
+            light.color = new Color(1f, 0.94f, 0.82f);
+            light.intensity = 1.2f;
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.6f;
+            light.shadowStrength = 1f;
+            light.shadowNormalBias = 0.6f;
             return light;
+        }
+
+        // ------------------------------------------------------------------ visual (toon + pós)
+
+        const string SettingsFolder = "Assets/_Project/Settings";
+
+        /// <summary>Antisserrilhado (contornos limpos) e sombras no perfil de qualidade PC.</summary>
+        static void ConfigurePipeline()
+        {
+            var pc = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset");
+            if (pc == null) return;
+            pc.msaaSampleCount = 4;
+            pc.shadowDistance = 45f;
+            EditorUtility.SetDirty(pc);
+        }
+
+        static T Override<T>(VolumeProfile profile) where T : VolumeComponent
+        {
+            var component = profile.Add<T>(true);
+            component.name = typeof(T).Name;
+            AssetDatabase.AddObjectToAsset(component, profile);
+            return component;
+        }
+
+        /// <summary>Perfil de pós-processamento: bloom leve, cores vivas, vinheta. Dungeons: mais bloom e vinheta.</summary>
+        static VolumeProfile PostProfile(bool dungeon)
+        {
+            EditorFolders.Ensure(SettingsFolder);
+            string path = $"{SettingsFolder}/OiramPost_{(dungeon ? "Dungeon" : "Day")}.asset";
+            if (AssetDatabase.LoadAssetAtPath<VolumeProfile>(path) != null) AssetDatabase.DeleteAsset(path);
+            var profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            AssetDatabase.CreateAsset(profile, path);
+
+            var bloom = Override<Bloom>(profile);
+            bloom.threshold.Override(dungeon ? 0.85f : 0.95f);
+            bloom.intensity.Override(dungeon ? 0.8f : 0.45f);
+            bloom.scatter.Override(0.65f);
+
+            var colors = Override<ColorAdjustments>(profile);
+            colors.postExposure.Override(dungeon ? 0.1f : 0.15f);
+            colors.contrast.Override(dungeon ? 12f : 8f);
+            colors.saturation.Override(dungeon ? 8f : 16f);
+
+            var tonemap = Override<Tonemapping>(profile);
+            tonemap.mode.Override(TonemappingMode.Neutral);
+
+            var white = Override<WhiteBalance>(profile);
+            white.temperature.Override(dungeon ? -4f : 6f);
+
+            var vignette = Override<Vignette>(profile);
+            vignette.color.Override(new Color(0.08f, 0.06f, 0.16f));
+            vignette.intensity.Override(dungeon ? 0.36f : 0.22f);
+            vignette.smoothness.Override(0.45f);
+
+            EditorUtility.SetDirty(profile);
+            return profile;
+        }
+
+        static VolumeProfile dayProfile, dungeonProfile;
+
+        /// <summary>Céu em degradê, luz ambiente do toon e pós-processamento (filho de <paramref name="root"/>).</summary>
+        static SceneAtmosphere CreateAtmosphere(Transform root, Camera cam, AtmosphereColors colors, bool dungeon = false)
+        {
+            var go = new GameObject("Atmosphere");
+            go.transform.SetParent(root, false);
+            var atmosphere = go.AddComponent<SceneAtmosphere>();
+            atmosphere.targetCamera = cam;
+            atmosphere.colors = colors;
+            SceneAtmosphere.ApplyAmbient(colors.ambientSky, colors.ambientGround);
+
+            var volume = go.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.sharedProfile = dungeon ? dungeonProfile ??= PostProfile(true) : dayProfile ??= PostProfile(false);
+
+            var data = cam.GetUniversalAdditionalCameraData();
+            data.renderPostProcessing = true;
+            data.antialiasing = AntialiasingMode.None;
+            return atmosphere;
         }
 
         static Camera CreateIsoCamera(Transform parent, string name, float size, Color background, Vector3 lookAt)
@@ -119,12 +202,15 @@ namespace Oiram.EditorTools
             var root = new GameObject("BattleRoot").transform;
             CreateSun(root);
             var cam = CreateIsoCamera(root, "BattleCamera", 4.4f, BattleSky, new Vector3(0f, 0.6f, 0f));
+            CreateAtmosphere(root, cam, AtmosphereColors.Day);
 
             var arena = new GameObject("Arena").transform;
             arena.SetParent(root, false);
-            Shapes.Part(PrimitiveType.Cylinder, arena, new Vector3(0f, -0.6f, 0f), new Vector3(13.5f, 0.55f, 13.5f), new Color(0.5f, 0.36f, 0.22f)).name = "Cliff";
-            Shapes.Part(PrimitiveType.Cylinder, arena, new Vector3(0f, -0.25f, 0f), new Vector3(12.5f, 0.25f, 12.5f), new Color(0.46f, 0.74f, 0.36f)).name = "Grass";
-            Shapes.Part(PrimitiveType.Cube, arena, new Vector3(0f, -1.2f, 0f), new Vector3(60f, 0.1f, 60f), new Color(0.3f, 0.58f, 0.86f)).name = "Water";
+            Shapes.Part(PrimitiveType.Cylinder, arena, new Vector3(0f, -0.65f, 0f), new Vector3(13.5f, 0.6f, 13.5f), new Color(0.62f, 0.44f, 0.28f)).name = "Cliff";
+            Shapes.Part(PrimitiveType.Cylinder, arena, new Vector3(0f, -0.08f, 0f), new Vector3(13.6f, 0.08f, 13.6f), new Color(0.38f, 0.64f, 0.3f)).name = "Grass";
+            Shapes.Part(PrimitiveType.Cylinder, arena, new Vector3(0f, -0.02f, 0f), new Vector3(12.8f, 0.03f, 12.8f), new Color(0.47f, 0.76f, 0.37f)).name = "Grass";
+            Shapes.Part(PrimitiveType.Plane, arena, new Vector3(0f, -1.15f, 0f), new Vector3(8f, 1f, 8f), Palette.Water(new Color(0.33f, 0.66f, 0.93f), new Color(0.2f, 0.45f, 0.82f))).name = "Water";
+            Shapes.MeadowScatter(arena, "ArenaMeadow", Vector3.zero, 6.2f, 0.01f, 140, 21, new Color(0.36f, 0.62f, 0.3f), p => p.magnitude < 4.6f).name = "Decor";
 
             // Decoração só no lado de trás (longe da câmera) para não tapar as unidades.
             var forward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up).normalized;
@@ -136,8 +222,25 @@ namespace Oiram.EditorTools
                 var holder = new GameObject(i % 3 == 0 ? "Rock" : "Tree").transform;
                 holder.SetParent(arena, false);
                 holder.position = dir * 5.6f;
-                if (i % 3 == 0) Shapes.Rock(holder, 1.2f);
-                else Shapes.Tree(holder, 1f + (i % 2) * 0.2f);
+                holder.rotation = Quaternion.Euler(0f, i * 47f, 0f);
+                if (i % 3 == 0) Shapes.Rock(holder, 1.2f, i);
+                else Shapes.Tree(holder, 1f + (i % 2) * 0.2f, i);
+                var bush = new GameObject("Tree").transform;
+                bush.SetParent(arena, false);
+                bush.position = Quaternion.Euler(0f, 12f, 0f) * dir * 4.9f;
+                Shapes.Bush(bush, 0.9f, i);
+            }
+
+            // Tochas: só aparecem nas batalhas de dungeon (ApplyTheme liga quando o tema é "indoor").
+            for (int i = 0; i < 6; i++)
+            {
+                float angle = i / 6f * Mathf.PI * 2f + 0.3f;
+                var dir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                if (Vector3.Dot(dir, forward) < -0.2f) continue;
+                var torches = new GameObject("Torches").transform;
+                torches.SetParent(arena, false);
+                WorldProps.Torch(torches, dir * 5.9f, new Color(1f, 0.62f, 0.3f));
+                torches.gameObject.SetActive(false);
             }
 
             // Posições: party à esquerda da tela, inimigos à direita.
@@ -195,6 +298,7 @@ namespace Oiram.EditorTools
             iso.distance = 30f;
             cam.transform.position = level.Player.transform.position + iso.offset - cam.transform.forward * iso.distance;
 
+            CreateAtmosphere(fieldRoot.transform, cam, AtmosphereColors.Day);
             var director = new GameObject("FieldDirector").AddComponent<FieldDirector>();
             director.Configure(fieldRoot, level.Player, "loc_vale");
 
@@ -262,6 +366,7 @@ namespace Oiram.EditorTools
             iso.target = level.Player.transform;
             cam.transform.position = level.Player.transform.position + iso.offset - cam.transform.forward * iso.distance;
 
+            CreateAtmosphere(fieldRoot.transform, cam, AtmosphereColors.Golden);
             var director = new GameObject("FieldDirector").AddComponent<FieldDirector>();
             director.Configure(fieldRoot, level.Player, townId);
             EditorSceneManager.SaveScene(scene, TownScenePath);
@@ -278,6 +383,7 @@ namespace Oiram.EditorTools
             var cam = CreateIsoCamera(fieldRoot.transform, "FieldCamera", 6.5f, new Color(0.1f, 0.1f, 0.12f), Vector3.zero);
             cam.gameObject.tag = "MainCamera";
             cam.gameObject.AddComponent<IsoCamera>();
+            CreateAtmosphere(fieldRoot.transform, cam, AtmosphereColors.Underground(new Color(0.12f, 0.1f, 0.14f), new Color(0.03f, 0.03f, 0.05f), new Color(0.4f, 0.38f, 0.42f)), dungeon: true);
 
             var director = new GameObject("FieldDirector").AddComponent<FieldDirector>();
             var dungeon = new GameObject("DungeonDirector").AddComponent<DungeonDirector>();
@@ -296,6 +402,7 @@ namespace Oiram.EditorTools
             var cam = CreateIsoCamera(root.transform, "MapCamera", 7.5f, FieldSky, Vector3.zero);
             cam.gameObject.tag = "MainCamera";
             cam.gameObject.AddComponent<IsoCamera>();
+            CreateAtmosphere(root.transform, cam, AtmosphereColors.Day);
             root.AddComponent<WorldMapDirector>().Configure(cam);
             EditorSceneManager.SaveScene(scene, WorldMapScenePath);
         }
@@ -308,6 +415,7 @@ namespace Oiram.EditorTools
             CreateSun(root.transform);
             var cam = CreateIsoCamera(root.transform, "TitleCamera", 4.2f, new Color(0.5f, 0.72f, 0.95f), new Vector3(0f, 1.6f, 0f));
             cam.gameObject.tag = "MainCamera";
+            CreateAtmosphere(root.transform, cam, AtmosphereColors.Golden);
             root.AddComponent<TitleDirector>();
             EditorSceneManager.SaveScene(scene, TitleScenePath);
         }

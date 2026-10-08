@@ -1,3 +1,4 @@
+using Oiram.Audio;
 using Oiram.Core;
 using Oiram.Loot;
 using Oiram.World;
@@ -58,6 +59,8 @@ namespace Oiram.Field
             var relic = ShopService.OpenHiddenChest(GameSession.Current, uniqueId);
             var director = FieldDirector.Instance;
             if (relic == null || director == null) return;
+            AudioManager.Play(Sfx.Bump);
+            AudioManager.PlayLoot(relic.Rarity);
             director.ShowToast("Um baú escondido apareceu do nada!", "gold-text");
             director.ShowToast($"{relic.Name} ({RarityInfo.Name(relic.Rarity)}, Nv {relic.ItemLevel})", RarityInfo.UssClass(relic.Rarity));
             _ = Shapes.LootBeam(transform.parent, transform.position, RarityInfo.Color(relic.Rarity), destroyCancellationToken);

@@ -1,4 +1,5 @@
 using System;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Loot;
@@ -38,6 +39,8 @@ namespace Oiram.Field
             }
 
             SetOpened(false);
+            AudioManager.Play(Sfx.ChestOpen);
+            Fx.Stars(transform.position + Vector3.up * 0.7f, Palette.Gold, 8);
             var session = GameSession.Current;
             session.ClearedFieldObjects.Add(uniqueId);
             var drop = session.RollLoot(lootTable, level);
