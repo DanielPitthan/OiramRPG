@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b69685494accb34f825542d68460d7d, type: 3}
+  m_Name: lt_dg_bau
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.LootTable
+  id: lt_dg_bau
+  displayName: "Ba\xFA da Dungeon"
+  description: 
+  goldMin: 15
+  goldMax: 30
+  itemsMin: 1
+  itemsMax: 2
+  rarityFloor: 0
+  guaranteedDrops: 
+  itemPool: []
+  consumables:
+  - consumable: {fileID: 11400000, guid: ea7a3c1fb98cbc8409f2686c818e5bdf, type: 2}
+    chance: 0.4
+  - consumable: {fileID: 11400000, guid: 595d6e92ddaf48142aade32fa301d51a, type: 2}
+    chance: 0.2
+  itemLevelBonus: 0

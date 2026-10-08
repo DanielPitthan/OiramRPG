@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 647e3a2589c92114f94a67c7e1a534ee, type: 3}
+  m_Name: guardiao
+  m_EditorClassIdentifier: OiramRPG::Oiram.Characters.JobDefinition
+  id: guardiao
+  displayName: "Guardi\xE3o"
+  description: 'Linha de frente: muito PV e DEF.'
+  color: {r: 0.8, g: 0.3, b: 0.25, a: 1}
+  skillsetName: Proezas
+  statMultipliers:
+    hp: 1.2
+    attack: 1.15
+    defense: 1.25
+    magic: 0.7
+    resistance: 0.9
+    speed: 0.9
+  allowedCategories: 0000000001000000040000000500000006000000080000000b0000000c000000i
+  abilities:
+  - {fileID: 11400000, guid: 7edc0e32616e9d0418ff9f0313460bee, type: 2}
+  - {fileID: 11400000, guid: 406dd301e49f9084692d7f30d701ff9d, type: 2}
+  - {fileID: 11400000, guid: 85591097b795e3c4383dfd5b74390f2c, type: 2}
+  - {fileID: 11400000, guid: 7cf1456ec40a9c440bac76691591ff11, type: 2}
+  requirements:
+  - job: {fileID: 11400000, guid: 7e5bb37058ea0724a857b15ddc2533e6, type: 2}
+    level: 2

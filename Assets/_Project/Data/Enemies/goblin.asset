@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c235a4b47c83dbd4687a3ffb69dd261d, type: 3}
+  m_Name: goblin
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EnemyDefinition
+  id: goblin
+  displayName: Goblin Saqueador
+  description: 
+  level: 2
+  stats:
+    hp: 62
+    attack: 18
+    defense: 6
+    magic: 3
+    resistance: 4
+    speed: 8
+  xp: 14
+  jp: 14
+  lootTable: {fileID: 11400000, guid: 501d46272c4a25a449361d3d7ea3c9f5, type: 2}
+  abilities:
+  - ability: {fileID: 11400000, guid: a3cb6781128a2864d8e734b8f4f79501, type: 2}
+    weight: 1
+  shape: 3
+  color: {r: 0.55, g: 0.72, b: 0.25, a: 1}
+  scale: 1
+  flying: 0
+  visualPrefab: {fileID: 0}

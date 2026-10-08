@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf1343a484935944fa98bce2e26c98af, type: 3}
+  m_Name: arcano
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.AffixDefinition
+  id: arcano
+  displayName: Arcano
+  description: 
+  position: 0
+  masculineName: Arcano
+  feminineName: Arcana
+  group: mag_flat
+  allowedSlots: 000000000200000003000000i
+  weight: 1
+  isSpecial: 0
+  stat: 3
+  kind: 0
+  tiers:
+  - minItemLevel: 1
+    min: 2
+    max: 4
+  - minItemLevel: 4
+    min: 5
+    max: 8
+  - minItemLevel: 8
+    min: 9
+    max: 13
+  - minItemLevel: 12
+    min: 14
+    max: 19

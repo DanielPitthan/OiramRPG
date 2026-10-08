@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c235a4b47c83dbd4687a3ffb69dd261d, type: 3}
+  m_Name: capataz
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EnemyDefinition
+  id: capataz
+  displayName: Capataz Goblin
+  description: 
+  level: 4
+  stats:
+    hp: 240
+    attack: 27
+    defense: 10
+    magic: 6
+    resistance: 8
+    speed: 7
+  xp: 70
+  jp: 50
+  lootTable: {fileID: 11400000, guid: ba3a4b6d64215f14b93973186836ecba, type: 2}
+  abilities:
+  - ability: {fileID: 11400000, guid: a3cb6781128a2864d8e734b8f4f79501, type: 2}
+    weight: 2
+  - ability: {fileID: 11400000, guid: 7beb26335b03c5d4781a11a429e943ff, type: 2}
+    weight: 1
+  - ability: {fileID: 11400000, guid: 1ccafa2864984ae488f47222f9aaf54e, type: 2}
+    weight: 1
+  shape: 3
+  color: {r: 0.78, g: 0.48, b: 0.22, a: 1}
+  scale: 1.5
+  flying: 0
+  visualPrefab: {fileID: 0}

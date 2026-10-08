@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c235a4b47c83dbd4687a3ffb69dd261d, type: 3}
+  m_Name: cavaleiro
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EnemyDefinition
+  id: cavaleiro
+  displayName: Cavaleiro Espectral
+  description: 
+  level: 5
+  stats:
+    hp: 270
+    attack: 25
+    defense: 12
+    magic: 17
+    resistance: 12
+    speed: 8
+  xp: 80
+  jp: 55
+  lootTable: {fileID: 11400000, guid: ba3a4b6d64215f14b93973186836ecba, type: 2}
+  abilities:
+  - ability: {fileID: 11400000, guid: 2557129f5ef84e14482d7bbaea1b4408, type: 2}
+    weight: 2
+  - ability: {fileID: 11400000, guid: 24d541fe3b84b3a43a47b6bfc0ac2f5c, type: 2}
+    weight: 1
+  - ability: {fileID: 11400000, guid: c289d9a80a1038f48ae1acae9ec522a7, type: 2}
+    weight: 1
+  shape: 11
+  color: {r: 0.45, g: 0.4, b: 0.62, a: 1}
+  scale: 1.35
+  flying: 0
+  visualPrefab: {fileID: 0}

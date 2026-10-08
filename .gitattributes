@@ -1,0 +1,15 @@
+# Texto sempre em LF (o Unity grava LF; evita diffs só de quebra de linha)
+* text=auto eol=lf
+
+# Binários
+*.png binary
+*.jpg binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary
+*.otf binary
+*.dll binary
+*.exe binary

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf1343a484935944fa98bce2e26c98af, type: 3}
+  m_Name: da_coruja
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.AffixDefinition
+  id: da_coruja
+  displayName: da Coruja
+  description: 
+  position: 1
+  masculineName: da Coruja
+  feminineName: 
+  group: mag_pct
+  allowedSlots: 000000000200000003000000i
+  weight: 1
+  isSpecial: 0
+  stat: 3
+  kind: 1
+  tiers:
+  - minItemLevel: 1
+    min: 4
+    max: 7
+  - minItemLevel: 4
+    min: 8
+    max: 12
+  - minItemLevel: 8
+    min: 13
+    max: 18
+  - minItemLevel: 12
+    min: 19
+    max: 25

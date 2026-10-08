@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c05f1dfeb7685b44a654ebef112388f, type: 3}
+  m_Name: BalanceConfig
+  m_EditorClassIdentifier: OiramRPG::Oiram.Core.BalanceConfig
+  perfectWindow: 0.06
+  goodWindow: 0.15
+  attackGoodMultiplier: 1.25
+  attackPerfectMultiplier: 1.5
+  blockGoodMultiplier: 0.5
+  blockPerfectMultiplier: 0.25
+  timingLatencyCompensation: 0.035
+  varianceMin: 0.9
+  varianceMax: 1.1
+  critMultiplier: 1.5
+  defendMultiplier: 0.5
+  burnPercentOfMaxHp: 0.08
+  buffPercent: 30
+  startingEnergy: 14
+  energyPerLevel: 2
+  energyRestoredAfterBattle: 5
+  jobLevelThresholds: 000000003c000000a00000002c010000f401000020030000b0040000a4060000i
+  maxCharacterLevel: 30
+  rarityWeights:
+  - 60
+  - 25
+  - 10
+  - 4
+  - 1
+  itemScalingPerLevel: 0.15
+  goldGrowthPerLevel: 0.15
+  inventoryCapacity: 80
+  fleeChance: 0.6
+  enemyHpGrowth: 0.26
+  enemyAttackGrowth: 0.11
+  enemyDefenseGrowth: 0.1
+  enemyMagicGrowth: 0.11
+  enemyResistanceGrowth: 0.1
+  enemySpeedGrowth: 0.03
+  dungeonXpDivisor: 40
+  jpGrowthPerLevel: 0.1
+  tierLevelPercent:
+  - -0.15
+  - 0
+  - 0.25
+  - 0.5
+  tierMinLevelOffset: ffffffff000000000100000002000000i
+  tierStatMultiplier:
+  - 0.9
+  - 1
+  - 1.1
+  - 1.12
+  tierRewardMultiplier:
+  - 0.75
+  - 1
+  - 1.35
+  - 1.8
+  tierMagicFind:
+  - 0
+  - 20
+  - 50
+  - 100
+  tierFloors: 02000000030000000300000004000000i
+  tierBossChestFloor: 01000000020000000200000003000000i
+  tierExtraEnemies: 00000000000000000000000001000000i
+  shopBuyMultiplier: 6
+  gamblePriceMultiplier: 9
+  gambleWeights:
+  - 0
+  - 55
+  - 30
+  - 12
+  - 3
+  blacksmithStock: 8
+  innBasePrice: 10
+  innPricePerLevel: 4
+  relicLevelBonus: 3

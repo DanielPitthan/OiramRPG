@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea11764d4077ca244952f9b7b6abca89, type: 3}
+  m_Name: loc_caverna
+  m_EditorClassIdentifier: OiramRPG::Oiram.World.LocationDefinition
+  id: loc_caverna
+  displayName: Caverna de Cristal
+  description: Cristais que zumbem com magia de gelo.
+  kind: 2
+  sceneName: Dungeon
+  mapPosition: {x: 19, y: 3}
+  connections:
+  - {fileID: 11400000, guid: 8245fc6d3f394fb4499e00d1a9cf542c, type: 2}
+  - {fileID: 11400000, guid: ebc3043c8d51fc04ba124d9e8b7d246f, type: 2}
+  requires: {fileID: 11400000, guid: ebc3043c8d51fc04ba124d9e8b7d246f, type: 2}
+  dungeon: {fileID: 11400000, guid: fdd8a32249dfa2844bdb7e3eb24b542f, type: 2}
+  color: {r: 0.4, g: 0.9, b: 1, a: 1}

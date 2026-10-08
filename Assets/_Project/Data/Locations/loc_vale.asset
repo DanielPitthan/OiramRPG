@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea11764d4077ca244952f9b7b6abca89, type: 3}
+  m_Name: loc_vale
+  m_EditorClassIdentifier: OiramRPG::Oiram.World.LocationDefinition
+  id: loc_vale
+  displayName: Vale de Oiram
+  description: "Onde tudo come\xE7ou. Campos, slimes e o Golem que guardava a sa\xEDda."
+  kind: 0
+  sceneName: Field_Vale
+  mapPosition: {x: 0, y: 0}
+  connections:
+  - {fileID: 11400000, guid: 4d51126b934fe0b40b16913be549b257, type: 2}
+  requires: {fileID: 0}
+  dungeon: {fileID: 0}
+  color: {r: 0.4, g: 0.75, b: 0.35, a: 1}

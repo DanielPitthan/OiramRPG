@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eecdfd93fa38f3745b2470d617d2b035, type: 3}
+  m_Name: machado_guerra
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.ItemBaseDefinition
+  id: machado_guerra
+  displayName: Machado de Guerra
+  description: 
+  gender: 0
+  slot: 0
+  category: 1
+  baseModifiers:
+  - stat: 1
+    kind: 0
+    value: 12
+  - stat: 5
+    kind: 0
+    value: -1
+  minItemLevel: 5
+  dropWeight: 1
+  color: {r: 0.75, g: 0.77, b: 0.82, a: 1}

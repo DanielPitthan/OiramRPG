@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 114c469f5d7300d4ab06df44bf9441f6, type: 3}
+  m_Name: teo
+  m_EditorClassIdentifier: OiramRPG::Oiram.Characters.CharacterDefinition
+  id: teo
+  displayName: Teo
+  description: 
+  color: {r: 0.95, g: 0.8, b: 0.3, a: 1}
+  baseStats:
+    hp: 34
+    attack: 7
+    defense: 6
+    magic: 10
+    resistance: 10
+    speed: 6
+  growthPerLevel:
+    hp: 6
+    attack: 1.4
+    defense: 1.2
+    magic: 2
+    resistance: 1.8
+    speed: 0.6
+  startingJob: {fileID: 11400000, guid: 2bd4e692d1109bf4cbd4e1c740821bdf, type: 2}
+  startingAbilities:
+  - {fileID: 11400000, guid: 3ef2c57713c74054cad0ef38e8877d10, type: 2}
+  startingEquipment:
+  - {fileID: 11400000, guid: c58472399fce7564f9cf92305eabafad, type: 2}
+  - {fileID: 11400000, guid: 47744c3684a30cf4bbc25ecbd3544dcc, type: 2}

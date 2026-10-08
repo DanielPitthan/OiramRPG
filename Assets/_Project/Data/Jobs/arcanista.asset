@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 647e3a2589c92114f94a67c7e1a534ee, type: 3}
+  m_Name: arcanista
+  m_EditorClassIdentifier: OiramRPG::Oiram.Characters.JobDefinition
+  id: arcanista
+  displayName: Arcanista
+  description: "Dano m\xE1gico alto, corpo fr\xE1gil."
+  color: {r: 0.35, g: 0.4, b: 0.9, a: 1}
+  skillsetName: Magia Arcana
+  statMultipliers:
+    hp: 0.85
+    attack: 0.7
+    defense: 0.8
+    magic: 1.3
+    resistance: 1.15
+    speed: 1
+  allowedCategories: 030000000200000007000000090000000a0000000b0000000c000000i
+  abilities:
+  - {fileID: 11400000, guid: 9f43978fd2a793a4eb8ed7b8fdd9cc75, type: 2}
+  - {fileID: 11400000, guid: 2af1ad591d01c554d8f9951167518fdb, type: 2}
+  - {fileID: 11400000, guid: 175eca48a912122489438d543de51b77, type: 2}
+  - {fileID: 11400000, guid: 0314ae3aea381c249a8b8b5efba7f91c, type: 2}
+  requirements:
+  - job: {fileID: 11400000, guid: 7e5bb37058ea0724a857b15ddc2533e6, type: 2}
+    level: 2

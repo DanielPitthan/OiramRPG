@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf1343a484935944fa98bce2e26c98af, type: 3}
+  m_Name: do_aprendiz
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.AffixDefinition
+  id: do_aprendiz
+  displayName: do Aprendiz
+  description: 
+  position: 1
+  masculineName: do Aprendiz
+  feminineName: 
+  group: jp
+  allowedSlots: 0200000003000000i
+  weight: 0.8
+  isSpecial: 0
+  stat: 12
+  kind: 0
+  tiers:
+  - minItemLevel: 1
+    min: 5
+    max: 10
+  - minItemLevel: 4
+    min: 11
+    max: 20
+  - minItemLevel: 10
+    min: 21
+    max: 30

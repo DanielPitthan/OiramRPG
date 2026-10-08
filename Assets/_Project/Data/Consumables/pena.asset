@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba3bb25c5af3a2a4389b1a8764dd7edd, type: 3}
+  m_Name: pena
+  m_EditorClassIdentifier: OiramRPG::Oiram.Inventory.ConsumableDefinition
+  id: pena
+  displayName: Pena Revigorante
+  description: Revive um aliado com 50% dos PV.
+  effect: 2
+  amount: 50
+  target: 5
+  price: 60
+  color: {r: 1, g: 0.85, b: 0.4, a: 1}

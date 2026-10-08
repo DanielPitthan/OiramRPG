@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c235a4b47c83dbd4687a3ffb69dd261d, type: 3}
+  m_Name: morcego
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EnemyDefinition
+  id: morcego
+  displayName: Morcego Trapaceiro
+  description: 
+  level: 2
+  stats:
+    hp: 38
+    attack: 15
+    defense: 3
+    magic: 6
+    resistance: 5
+    speed: 11
+  xp: 10
+  jp: 12
+  lootTable: {fileID: 11400000, guid: 8c2711919c0eff04ab6d19226dfa108c, type: 2}
+  abilities:
+  - ability: {fileID: 11400000, guid: 5c218b290cd2a764e9899f749b6701bd, type: 2}
+    weight: 2
+  - ability: {fileID: 11400000, guid: c51da5b497c082a489439d3240ed99a2, type: 2}
+    weight: 1
+  shape: 2
+  color: {r: 0.45, g: 0.3, b: 0.6, a: 1}
+  scale: 0.8
+  flying: 1
+  visualPrefab: {fileID: 0}

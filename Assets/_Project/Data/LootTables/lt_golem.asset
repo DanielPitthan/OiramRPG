@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b69685494accb34f825542d68460d7d, type: 3}
+  m_Name: lt_golem
+  m_EditorClassIdentifier: OiramRPG::Oiram.Loot.LootTable
+  id: lt_golem
+  displayName: 'Loot: Golem'
+  description: 
+  goldMin: 80
+  goldMax: 120
+  itemsMin: 2
+  itemsMax: 4
+  rarityFloor: 1
+  guaranteedDrops: 03000000i
+  itemPool: []
+  consumables:
+  - consumable: {fileID: 11400000, guid: 484ab99be1dd64b438edd49f08601156, type: 2}
+    chance: 0.5
+  itemLevelBonus: 1

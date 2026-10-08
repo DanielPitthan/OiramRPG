@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd523d013b0c9cd49b9db8ee8b475a7a, type: 3}
+  m_Name: enc_golem
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EncounterDefinition
+  id: enc_golem
+  displayName: Golem de Pedra
+  description: 
+  enemies:
+  - {fileID: 11400000, guid: 2214fec2fe4f7d3469f8553fb76ea82c, type: 2}
+  - {fileID: 11400000, guid: 49b212881d4c1594583de2ca5cb4c3f6, type: 2}
+  - {fileID: 11400000, guid: 2214fec2fe4f7d3469f8553fb76ea82c, type: 2}
+  canFlee: 0
+  isBoss: 1
+  bonusLoot: {fileID: 0}

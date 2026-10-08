@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 114c469f5d7300d4ab06df44bf9441f6, type: 3}
+  m_Name: oiram
+  m_EditorClassIdentifier: OiramRPG::Oiram.Characters.CharacterDefinition
+  id: oiram
+  displayName: Oiram
+  description: 
+  color: {r: 0.85, g: 0.25, b: 0.2, a: 1}
+  baseStats:
+    hp: 40
+    attack: 10
+    defense: 8
+    magic: 4
+    resistance: 5
+    speed: 7
+  growthPerLevel:
+    hp: 7
+    attack: 2
+    defense: 1.6
+    magic: 0.8
+    resistance: 1
+    speed: 0.6
+  startingJob: {fileID: 11400000, guid: be6fb753fc003444daa33919830a3887, type: 2}
+  startingAbilities:
+  - {fileID: 11400000, guid: 7edc0e32616e9d0418ff9f0313460bee, type: 2}
+  startingEquipment:
+  - {fileID: 11400000, guid: d0154b9e8c663ce4ba770481fa5c14e9, type: 2}
+  - {fileID: 11400000, guid: 3c9e80fb5b243494fad69d0c6c775e9c, type: 2}

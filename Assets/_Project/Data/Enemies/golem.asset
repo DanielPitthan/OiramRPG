@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c235a4b47c83dbd4687a3ffb69dd261d, type: 3}
+  m_Name: golem
+  m_EditorClassIdentifier: OiramRPG::Oiram.Battle.EnemyDefinition
+  id: golem
+  displayName: Golem de Pedra
+  description: 
+  level: 4
+  stats:
+    hp: 270
+    attack: 32
+    defense: 12
+    magic: 5
+    resistance: 8
+    speed: 3
+  xp: 80
+  jp: 60
+  lootTable: {fileID: 11400000, guid: 9ee810bc0885c574e9883451928e1473, type: 2}
+  abilities:
+  - ability: {fileID: 11400000, guid: deaf54d7a94cf7b448c2a1a91cda438c, type: 2}
+    weight: 1
+  - ability: {fileID: 11400000, guid: 2c0ab7fbf8ff22c4a8d9acad3138e045, type: 2}
+    weight: 1
+  shape: 5
+  color: {r: 0.55, g: 0.55, b: 0.6, a: 1}
+  scale: 1.6
+  flying: 0
+  visualPrefab: {fileID: 0}
