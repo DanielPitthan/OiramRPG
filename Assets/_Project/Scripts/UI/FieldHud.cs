@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using Oiram.Audio;
 using Oiram.Core;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -63,6 +64,7 @@ namespace Oiram.UI
             onDialogueClosed = onClosed;
             dialogueFrame = Time.frameCount;
             DialogueOpen = true;
+            AudioManager.Play(Sfx.Confirm, 0.7f);
             UiKit.Show(dialogueBox, true);
             UiKit.Show(promptBox, false);
         }
@@ -117,7 +119,10 @@ namespace Oiram.UI
         {
             if (DialogueOpen && Time.frameCount != dialogueFrame &&
                 (GameInput.ConfirmDown || GameInput.CancelDown || GameInput.InteractDown))
+            {
+                AudioManager.Play(Sfx.Cursor);
                 CloseDialogue();
+            }
 
             for (int i = toasts.Count - 1; i >= 0; i--)
             {

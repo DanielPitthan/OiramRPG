@@ -1,4 +1,5 @@
 using System;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Loot;
@@ -21,6 +22,7 @@ namespace Oiram.Field
         public override void Interact(FieldPlayerController player)
         {
             GameSession.Current.RestoreAll();
+            AudioManager.Play(Sfx.Heal);
             PlaytestLog.Note("descanso", "fogueira");
             FieldDirector.Instance.ShowToast("A party descansou: PV e PE recuperados!", "good");
         }

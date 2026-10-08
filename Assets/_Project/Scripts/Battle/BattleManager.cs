@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Oiram.Audio;
 using Oiram.Characters;
 using Oiram.Core;
 using Oiram.Inventory;
@@ -65,6 +66,10 @@ namespace Oiram.Battle
         // Números da batalha para o log de playtest.
         int rounds, damageDealt, damageTaken, knockOuts;
         float startedAt;
+
+        // Tremor de câmera (tempo real: continua durante o hit-stop).
+        Vector3 cameraHome;
+        float shakeUntil, shakeDuration, shakeMagnitude;
 
         void Tally(BattleUnit target, int damage)
         {
@@ -157,6 +162,9 @@ namespace Oiram.Battle
 
             SpawnUnits();
             ApplyTheme(request.Theme);
+            if (battleCamera != null) cameraHome = battleCamera.transform.position;
+            shakeUntil = 0f;
+            AudioManager.PlayMusic(encounter.isBoss ? MusicTrack.Boss : MusicTrack.Battle, 0.2f);
             Hud = BattleHud.Create(transform, battleCamera);
             Hud.Bind(Session, units.Where(u => u.Side == Side.Party), units.Where(u => u.Side == Side.Enemies), ViewOf);
 
@@ -195,9 +203,12 @@ namespace Oiram.Battle
                     summary = await Victory(ct);
                     break;
                 case BattleResult.Defeat:
+                    AudioManager.StopMusic(0.2f);
+                    AudioManager.Play(Sfx.Defeat);
                     await Hud.ShowDefeat(ct, !autoAdvance);
                     break;
                 case BattleResult.Fled:
+                    AudioManager.Play(Sfx.Jump, 0.8f, 1.4f);
                     await FleeSequence(ct);
                     break;
             }
@@ -327,14 +338,18 @@ namespace Oiram.Battle
                     {
                         case "Grass": Paint(child, t.Ground); break;
                         case "Cliff": Paint(child, t.Cliff); break;
-                        case "Water": Paint(child, t.Sky * 0.7f); break;
-                        case "Tree": child.gameObject.SetActive(!t.Indoor); break;
+                        case "Water": child.gameObject.SetActive(!t.Indoor); break;
+                        case "Torches": child.gameObject.SetActive(t.Indoor); break;
+                        case "Tree":
+                        case "Decor": child.gameObject.SetActive(!t.Indoor); break;
                         case "Rock": Paint(child, t.Cliff * 1.25f); break;
                     }
                 }
             }
-            if (battleCamera != null) battleCamera.backgroundColor = t.Sky;
-            RenderSettings.ambientLight = t.Ambient;
+            var colors = AtmosphereColors.Underground(t.Sky, t.Sky * 0.35f, t.Ambient);
+            var atmosphere = GetComponentInChildren<SceneAtmosphere>(true);
+            if (atmosphere != null) atmosphere.SetColors(colors);
+            else SceneAtmosphere.ApplyAmbient(colors.ambientSky, colors.ambientGround);
         }
 
         static void Paint(Transform target, Color color)
@@ -380,7 +395,11 @@ namespace Oiram.Battle
                 {
                     var nav = GameInput.Nav;
                     int step = nav.x != 0 ? nav.x : -nav.y;
-                    if (step != 0) index = (index + step + candidates.Count) % candidates.Count;
+                    if (step != 0)
+                    {
+                        index = (index + step + candidates.Count) % candidates.Count;
+                        AudioManager.Play(Sfx.Cursor);
+                    }
                     var target = candidates[index];
                     ShowMarkers(new[] { target });
                     Hud.ShowTargetInfo($"{target.Name}   PV {target.Hp}/{target.MaxHp}");
@@ -388,12 +407,14 @@ namespace Oiram.Battle
 
                 if (GameInput.ConfirmDown)
                 {
+                    AudioManager.Play(Sfx.Confirm);
                     HideMarkers();
                     Hud.ShowTargetInfo(null);
                     return multi ? candidates : new List<BattleUnit> { candidates[index] };
                 }
                 if (GameInput.CancelDown)
                 {
+                    AudioManager.Play(Sfx.Cancel);
                     HideMarkers();
                     Hud.ShowTargetInfo(null);
                     return null;
@@ -434,6 +455,7 @@ namespace Oiram.Battle
             switch (command.Type)
             {
                 case CommandType.Defend:
+                    AudioManager.Play(Sfx.Block, 0.7f);
                     actor.AddStatus(StatusType.Defending, 1);
                     Hud.Popup(ViewOf(actor).Top, "Defesa!", "status");
                     await ViewOf(actor).Hop(ct, 0.25f, 0.25f);
@@ -548,6 +570,15 @@ namespace Oiram.Battle
             }
         }
 
+        /// <summary>Arma a janela de timing e, se for o jogador, mostra o anel sobre <paramref name="ringAt"/>.</summary>
+        TimedPress Press(BattleUnit presser, float secondsToImpact, string kind, string abilityId, Vector3 ringAt, bool block)
+        {
+            var press = new TimedPress(presser, secondsToImpact, Session.Balance, kind, abilityId);
+            if (press.Presser != null && GameSettings.TimingRing)
+                Hud.ShowTimingRing(press.Window, ringAt, press.Window.ImpactAt - Session.Balance.timingLatencyCompensation, block);
+            return press;
+        }
+
         void ShowTiming(TimedPress press, Vector3 at, bool isBlock)
         {
             if (press.Presser == null) return;
@@ -557,13 +588,53 @@ namespace Oiram.Battle
                 string text = isBlock ? (r == TimedHitResult.Perfect ? "DEFESA PERFEITA!" : "DEFESA!") : TimedHitEvaluator.Label(r);
                 if (TimingFeedback.ShowMilliseconds) text += $" ({TimingFeedback.Milliseconds(press.Window.PressOffset)})";
                 Hud.Popup(at + Vector3.up * 0.6f, text, "timing");
+                if (r == TimedHitResult.Perfect) PerfectJuice(at, isBlock);
             }
             else if (press.Window.HasInput)
             {
                 string text = press.Window.PressOffset < 0 ? "Cedo!" : "Tarde!";
                 if (TimingFeedback.ShowMilliseconds) text += $" ({TimingFeedback.Milliseconds(press.Window.PressOffset)})";
                 Hud.Popup(at + Vector3.up * 0.6f, text, "status", 0.8f);
+                AudioManager.Play(Sfx.Miss, 0.7f);
             }
+        }
+
+        /// <summary>Golpe/defesa perfeitos: congela por um instante, solta estrelas e treme a câmera.</summary>
+        void PerfectJuice(Vector3 at, bool isBlock)
+        {
+            HitStop.Freeze(isBlock ? 0.06f : 0.09f);
+            var color = isBlock ? new Color(0.55f, 0.85f, 1f) : Palette.Gold;
+            _ = Shapes.Burst(transform, at - Vector3.up * 0.2f, color, 8, 1.1f, 0.18f, 0.4f, 0.5f, destroyCancellationToken, glowing: true);
+            Shake(isBlock ? 0.05f : 0.1f, 0.2f);
+            Fx.Stars(at, color, 12);
+        }
+
+        void Shake(float magnitude, float duration)
+        {
+            if (battleCamera == null) return;
+            float now = Time.unscaledTime;
+            float remaining = shakeUntil > now ? shakeMagnitude * (shakeUntil - now) / Mathf.Max(0.01f, shakeDuration) : 0f;
+            shakeMagnitude = Mathf.Max(magnitude, remaining);
+            shakeDuration = duration;
+            shakeUntil = now + duration;
+        }
+
+        void LateUpdate()
+        {
+            if (battleCamera == null || !IsRunning) return;
+            float remaining = shakeUntil - Time.unscaledTime;
+            battleCamera.transform.position = remaining > 0f
+                ? cameraHome + UnityEngine.Random.insideUnitSphere * (shakeMagnitude * remaining / Mathf.Max(0.01f, shakeDuration))
+                : cameraHome;
+        }
+
+        static Sfx HitSound(HitOutcome outcome)
+        {
+            if (outcome.Block == TimedHitResult.Perfect) return Sfx.BlockPerfect;
+            if (outcome.Block == TimedHitResult.Good) return Sfx.Block;
+            if (outcome.Timing == TimedHitResult.Perfect) return Sfx.Perfect;
+            if (outcome.Timing == TimedHitResult.Good) return Sfx.HitGood;
+            return Sfx.Hit;
         }
 
         void ShowOutcome(HitOutcome outcome)
@@ -573,10 +644,20 @@ namespace Oiram.Battle
             if (outcome.Damage > 0) Tally(outcome.Target, outcome.Damage);
             if (outcome.Damage > 0)
             {
-                Hud.Popup(view.Top, outcome.Crit ? $"{outcome.Damage}!" : outcome.Damage.ToString(), "damage");
+                Hud.Popup(view.Top, outcome.Crit ? $"{outcome.Damage}!" : outcome.Damage.ToString(), outcome.Crit ? "crit" : "damage");
                 _ = view.HitReaction(destroyCancellationToken);
+                Fx.Sparks(view.Center, new Color(1f, 0.92f, 0.65f));
+                if (outcome.Crit) Fx.Stars(view.Center, new Color(1f, 0.55f, 0.3f));
+                AudioManager.Play(HitSound(outcome), outcome.Crit ? 1f : 0.85f, outcome.Crit ? 0.85f : 1f);
+                if (outcome.Crit) Shake(0.16f, 0.3f);
+                else if (outcome.Target.Side == Side.Party && encounter != null && encounter.isBoss) Shake(0.1f, 0.25f);
             }
-            if (outcome.Healed > 0) Hud.Popup(view.Top, $"+{outcome.Healed}", "heal");
+            if (outcome.Healed > 0)
+            {
+                Hud.Popup(view.Top, $"+{outcome.Healed}", "heal");
+                Fx.Rising(view.transform.position, new Color(0.55f, 1f, 0.6f), 0.4f, 12, 0.8f);
+            }
+            if (outcome.StatusApplied && outcome.Damage <= 0) AudioManager.Play(Sfx.Buff, 0.7f);
             if (outcome.StatusApplied) Hud.Popup(view.Top + Vector3.up * 0.45f, StatusText.Name(outcome.Status), "status");
             Hud.Refresh();
         }
@@ -609,7 +690,7 @@ namespace Oiram.Battle
                     ? (ability.timing is TimedHitType.SinglePress or TimedHitType.MultiPress ? actor : null)
                     : target;
                 TimedHitResult pressResult;
-                using (var press = new TimedPress(presser, windup, Session.Balance, party ? (hits > 1 ? "multi" : "ataque") : "defesa", ability.id))
+                using (var press = Press(presser, windup, party ? (hits > 1 ? "multi" : "ataque") : "defesa", ability.id, tv.Center, block: !party))
                 {
                     await av.WindUp(windup, ct);
                     _ = av.Strike(ct);
@@ -657,6 +738,7 @@ namespace Oiram.Battle
             Hud.ShowCharge(true);
             Hud.ShowBanner("Segure Confirmar...", 0f);
             double giveUpAt = GameInput.Now + 3.0;
+            bool fullPlayed = false;
             using (GameInput.ListenConfirm(window.RegisterPress, window.RegisterRelease))
             {
                 while (!window.IsDone)
@@ -666,6 +748,11 @@ namespace Oiram.Battle
                     if (!window.PressedAt.HasValue && now > giveUpAt) window.Cancel();
                     float charge = window.Charge01(now);
                     Hud.SetCharge(charge);
+                    if (charge >= 1f && !fullPlayed)
+                    {
+                        fullPlayed = true;
+                        AudioManager.Play(Sfx.ChargeFull);
+                    }
                     if (view.Visual) view.Visual.localPosition = new Vector3(Mathf.Sin(Time.time * 60f) * 0.04f * charge, view.Visual.localPosition.y, 0f);
                     await Awaitable.NextFrameAsync(ct);
                 }
@@ -689,7 +776,11 @@ namespace Oiram.Battle
                 latencyMs = latency * 1000f,
             });
             string ms = TimingFeedback.ShowMilliseconds && window.ReleasedAt.HasValue ? $" ({TimingFeedback.Milliseconds(releaseOffset)})" : "";
-            if (window.Result != TimedHitResult.Miss) Hud.Popup(view.Top + Vector3.up * 0.6f, TimedHitEvaluator.Label(window.Result) + ms, "timing");
+            if (window.Result != TimedHitResult.Miss)
+            {
+                Hud.Popup(view.Top + Vector3.up * 0.6f, TimedHitEvaluator.Label(window.Result) + ms, "timing");
+                if (window.Result == TimedHitResult.Perfect) AudioManager.Play(Sfx.ChargeFull, 1f, 1.2f);
+            }
             else if (window.PressedAt.HasValue) Hud.Popup(view.Top + Vector3.up * 0.6f, "Carga falhou" + ms, "status", 0.8f);
             return window.Result;
         }
@@ -705,9 +796,12 @@ namespace Oiram.Battle
             const float airTime = 0.6f;
             var presser = party ? actor : targets.FirstOrDefault(t => t.Side == Side.Party);
             TimedHitResult result;
-            using (var press = new TimedPress(presser, airTime, Session.Balance, party ? "area" : "defesa", ability.id))
+            var ringAt = party || presser == null ? center + Vector3.up * 0.8f : ViewOf(presser).Center;
+            using (var press = Press(presser, airTime, party ? "area" : "defesa", ability.id, ringAt, block: !party))
             {
                 await Tween.Arc(av.transform, landing, 2.2f, airTime, ct);
+                Shake(0.12f, 0.25f);
+                AudioManager.Play(Sfx.Land, 1f, 0.7f);
                 foreach (var t in targets) _ = Tween.Shake(ViewOf(t).Visual, 0.3f, 0.15f, ct);
                 await press.WaitClosed(ct);
                 result = press.Result;
@@ -740,8 +834,10 @@ namespace Oiram.Battle
             const float travel = 0.55f;
             var presser = party ? actor : targets.FirstOrDefault(t => t.Side == Side.Party);
             var color = SpellColor(ability);
+            AudioManager.Play(Sfx.Magic, 0.8f, party ? 1f : 0.8f);
             TimedHitResult result;
-            using (var press = new TimedPress(presser, travel, Session.Balance, party ? "magia" : "defesa", ability.id))
+            var ringAt = party || presser == null ? ViewOf(targets[0]).Center : ViewOf(presser).Center;
+            using (var press = Press(presser, travel, party ? "magia" : "defesa", ability.id, ringAt, block: !party))
             {
                 var flights = new List<Awaitable>();
                 foreach (var t in targets)
@@ -766,7 +862,10 @@ namespace Oiram.Battle
 
         async Awaitable Projectile(Vector3 from, Vector3 to, Color color, float duration, CancellationToken ct)
         {
-            var orb = Shapes.Part(PrimitiveType.Sphere, transform, Vector3.zero, Vector3.one * 0.35f, color).transform;
+            var orb = Shapes.Part(MeshLibrary.Icosphere(1), transform, Vector3.zero, Vector3.one * 0.35f, Palette.Emissive(color, 2.2f)).transform;
+            orb.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Shapes.GlowQuad(orb, Vector3.zero, 2.4f, Palette.Glow(new Color(color.r, color.g, color.b, 0.6f))).AddComponent<Billboard>();
+            Fx.Trail(orb.gameObject, color, 0.3f, 0.3f);
             orb.position = from;
             try
             {
@@ -776,7 +875,11 @@ namespace Oiram.Battle
                     orb.position = Vector3.Lerp(from, to, Tween.EaseInQuad(k));
                     orb.localScale = Vector3.one * (0.3f + 0.15f * Mathf.Sin(k * 20f));
                 }, ct);
-                if (orb) await Tween.ScaleTo(orb, Vector3.one * 1.1f, 0.08f, ct);
+                if (orb)
+                {
+                    Fx.Burst(to, color, 16, 3.5f, 0.2f, 0.45f, gravity: 0.2f, radius: 0.2f);
+                    await Tween.ScaleTo(orb, Vector3.one * 1.1f, 0.08f, ct);
+                }
             }
             finally
             {
@@ -786,37 +889,17 @@ namespace Oiram.Battle
 
         async Awaitable Sparkles(BattleUnitView target, Color color, float duration, CancellationToken ct)
         {
-            var parts = new List<Transform>();
-            for (int i = 0; i < 6; i++)
-            {
-                var p = Shapes.Part(PrimitiveType.Cube, transform, Vector3.zero, Vector3.one * 0.12f, color, new Vector3(45, 0, 45)).transform;
-                parts.Add(p);
-            }
-            var basePos = target.transform.position;
-            try
-            {
-                await Tween.Run(duration, k =>
-                {
-                    for (int i = 0; i < parts.Count; i++)
-                    {
-                        if (!parts[i]) continue;
-                        float a = i / (float)parts.Count * Mathf.PI * 2f + k * 6f;
-                        parts[i].position = basePos + new Vector3(Mathf.Cos(a) * 0.5f, k * target.Height * 1.2f, Mathf.Sin(a) * 0.5f);
-                    }
-                }, ct);
-            }
-            finally
-            {
-                foreach (var p in parts) if (p) Destroy(p.gameObject);
-            }
+            Fx.Rising(target.transform.position, color, 0.5f, 22, duration + 0.4f);
+            await Tween.Delay(duration, ct);
         }
 
         async Awaitable Heal(BattleUnit actor, List<BattleUnit> targets, AbilityDefinition ability, CancellationToken ct)
         {
             await ViewOf(actor).Hop(ct, 0.4f, 0.25f);
             const float duration = 0.5f;
+            AudioManager.Play(Sfx.Heal);
             TimedHitResult result;
-            using (var press = new TimedPress(actor, duration, Session.Balance, "cura", ability.id))
+            using (var press = Press(actor, duration, "cura", ability.id, ViewOf(targets[0]).Center, block: false))
             {
                 var fx = targets.Select(t => Sparkles(ViewOf(t), new Color(0.5f, 1f, 0.55f), duration, ct)).ToList();
                 foreach (var f in fx) await f;
@@ -832,6 +915,7 @@ namespace Oiram.Battle
             await ViewOf(actor).Hop(ct, 0.4f, 0.25f);
             foreach (var t in targets)
             {
+                AudioManager.Play(Sfx.Heal, 1f, 1.15f);
                 await Sparkles(ViewOf(t), color, 0.5f, ct);
                 var outcome = Rules.Revive(t, hpPercent);
                 if (outcome.Revived) ViewOf(t).Revive();
@@ -842,6 +926,7 @@ namespace Oiram.Battle
         async Awaitable Buff(BattleUnit actor, List<BattleUnit> targets, AbilityDefinition ability, CancellationToken ct)
         {
             await ViewOf(actor).Hop(ct, 0.5f, 0.3f);
+            AudioManager.Play(Sfx.Buff);
             foreach (var t in targets)
             {
                 _ = Tween.Squash(ViewOf(t).Visual, -0.25f, 0.3f, ct);
@@ -859,7 +944,7 @@ namespace Oiram.Battle
             touch.y = av.Home.y;
 
             TimedHitResult result;
-            using (var press = new TimedPress(actor, 0.35f, Session.Balance, "roubo", "roubar"))
+            using (var press = Press(actor, 0.35f, "roubo", "roubar", tv.Center, block: false))
             {
                 av.Face(dir);
                 await Tween.MoveTo(av.transform, touch, 0.35f, ct, Tween.EaseInQuad);
@@ -874,12 +959,15 @@ namespace Oiram.Battle
                 case StealResult.Stolen:
                     stolen.Add(item);
                     Hud.PopupRarity(tv.Top, item);
+                    AudioManager.Play(Sfx.Steal);
+                    if (item.Rarity >= Rarity.Rare) AudioManager.PlayLoot(item.Rarity);
                     break;
                 case StealResult.InventoryFull:
                     Hud.Popup(tv.Top, "Mochila cheia!", "status");
                     break;
                 default:
                     Hud.Popup(tv.Top, "Nada para roubar!", "status");
+                    AudioManager.Play(Sfx.Miss, 0.7f);
                     break;
             }
 
@@ -894,6 +982,7 @@ namespace Oiram.Battle
             if (item == null || !Session.Inventory.ConsumeOne(item)) return;
             Hud.ShowBanner(item.displayName, 1f);
             await ViewOf(actor).Hop(ct, 0.4f, 0.25f);
+            AudioManager.Play(item.effect == ConsumableEffect.RestoreEnergy ? Sfx.Buff : Sfx.Heal);
 
             if (item.effect == ConsumableEffect.RestoreEnergy)
             {
@@ -925,12 +1014,24 @@ namespace Oiram.Battle
         async Awaitable OnDeath(BattleUnit unit, CancellationToken ct)
         {
             var view = ViewOf(unit);
-            if (unit.Side == Side.Party) knockOuts++;
+            if (unit.Side == Side.Party)
+            {
+                knockOuts++;
+                AudioManager.Play(Sfx.PartyKnockOut);
+                Shake(0.12f, 0.3f);
+            }
             if (unit.Side == Side.Enemies)
             {
+                AudioManager.Play(Sfx.EnemyDie);
+                Fx.Poof(view.Center, new Color(0.95f, 0.93f, 1f, 0.85f));
+                Fx.Stars(view.Center, Palette.Gold, 6);
                 var drop = BattleEffects.RollEnemyLoot(Session, unit);
                 loot.Merge(drop);
-                if (drop.BestRarity is Rarity best) _ = Shapes.LootBeam(transform, view.transform.position, RarityInfo.Color(best), ct);
+                if (drop.BestRarity is Rarity best)
+                {
+                    _ = Shapes.LootBeam(transform, view.transform.position, RarityInfo.Color(best), ct);
+                    if (best >= Rarity.Rare) AudioManager.PlayLoot(best);
+                }
             }
             await view.Die(ct);
         }
@@ -938,13 +1039,28 @@ namespace Oiram.Battle
         async Awaitable<VictorySummary> Victory(CancellationToken ct)
         {
             await Tween.Delay(0.4f, ct);
-            foreach (var hero in Party().Where(u => u.IsAlive)) _ = ViewOf(hero).Hop(ct, 0.7f, 0.4f);
+            AudioManager.StopMusic(0.15f);
+            AudioManager.Play(Sfx.Victory);
+            foreach (var hero in Party().Where(u => u.IsAlive))
+            {
+                _ = ViewOf(hero).Hop(ct, 0.7f, 0.4f);
+                Fx.Rising(ViewOf(hero).transform.position, Palette.Gold, 0.5f, 16, 1.1f);
+            }
 
             var summary = BattleEffects.GrantVictory(Session, encounter, loot, Party(), stolen);
+            foreach (var hero in Party()) hero.SyncMaxHp();
             Hud.Refresh();
+            if (summary.LevelUps > 0) _ = PlayLater(Sfx.LevelUp, 1.9f, ct);
 
             await Hud.ShowVictory(summary, ct, !autoAdvance);
             return summary;
+        }
+
+        static async Awaitable PlayLater(Sfx sfx, float seconds, CancellationToken ct)
+        {
+            try { await Awaitable.WaitForSecondsAsync(seconds, ct); }
+            catch (OperationCanceledException) { return; }
+            AudioManager.Play(sfx);
         }
 
         async Awaitable FleeSequence(CancellationToken ct)

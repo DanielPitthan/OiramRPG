@@ -1,3 +1,4 @@
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using UnityEngine;
@@ -71,7 +72,11 @@ namespace Oiram.Field
                 bool fromAbove = verticalGap > bodyHeight * 0.6f && player.VerticalVelocity < 0f;
                 if (fromAbove || Mathf.Abs(verticalGap) < bodyHeight + 0.6f)
                 {
-                    if (fromAbove) player.Bounce(0.6f);
+                    if (fromAbove)
+                    {
+                        player.Bounce(0.6f);
+                        AudioManager.Play(Sfx.Bump);
+                    }
                     director.StartBattle(encounter, this, fromAbove);
                     return;
                 }

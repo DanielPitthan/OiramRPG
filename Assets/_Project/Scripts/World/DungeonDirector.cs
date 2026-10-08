@@ -22,6 +22,7 @@ namespace Oiram.World
 
         GameSession session;
         DungeonRun run;
+        bool debugRun;
         Transform actors;
         Vector3 bossPosition;
 
@@ -41,6 +42,7 @@ namespace Oiram.World
         {
             Instance = this;
             session = GameSession.Current;
+            debugRun = session.ActiveRun == null;
             run = session.ActiveRun ?? DebugRun();
             Build();
         }
@@ -105,11 +107,12 @@ namespace Oiram.World
             }
 
             // Clima do tema.
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = dungeon.ambientColor;
+            var atmosphere = fieldRoot.GetComponentInChildren<SceneAtmosphere>(true);
+            var colors = AtmosphereColors.Underground(dungeon.skyColor, dungeon.voidColor, dungeon.ambientColor);
+            if (atmosphere != null) atmosphere.SetColors(colors);
+            else SceneAtmosphere.ApplyAmbient(colors.ambientSky, colors.ambientGround);
             if (fieldCamera != null)
             {
-                fieldCamera.backgroundColor = dungeon.skyColor;
                 var iso = fieldCamera.GetComponent<IsoCamera>();
                 if (iso != null && player != null)
                 {
@@ -140,6 +143,8 @@ namespace Oiram.World
         {
             field.ShowToast($"{run.Dungeon.displayName} — andar {run.Floor + 1}/{run.Floors}", "gold-text");
             field.ShowToast($"{BalanceConfig.TierName(run.Tier)} · inimigos Nv {run.Level}" + (run.IsLastFloor ? " · o chefe espera no fim!" : ""), "muted");
+            // Salva no começo de cada andar ("Continuar" volta aqui). Play direto na cena não mexe no save.
+            if (!debugRun && SaveSystem.AutoSave(session, ResumePoint.Dungeon)) field.ShowToast("Jogo salvo automaticamente.", "muted");
         }
 
         void OnBattleEnded(EncounterDefinition encounter, BattleOutcome outcome)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using Oiram.Audio;
 using Oiram.Core;
 using Oiram.Loot;
 using UnityEngine;
@@ -173,6 +174,7 @@ namespace Oiram.UI
             var nav = GameInput.Nav;
             if (nav.y == 0 || entries.Count == 0) return false;
             Select(Index - nav.y);
+            AudioManager.Play(Sfx.Cursor);
             return true;
         }
 
@@ -184,8 +186,20 @@ namespace Oiram.UI
             while (true)
             {
                 HandleNavigation();
-                if (GameInput.ConfirmDown && entries.Count > 0 && entries[Index].Enabled) return Index;
-                if (allowCancel && GameInput.CancelDown) return -1;
+                if (GameInput.ConfirmDown && entries.Count > 0)
+                {
+                    if (entries[Index].Enabled)
+                    {
+                        AudioManager.Play(Sfx.Confirm);
+                        return Index;
+                    }
+                    AudioManager.Play(Sfx.Cancel, 0.8f, 0.8f);
+                }
+                if (allowCancel && GameInput.CancelDown)
+                {
+                    AudioManager.Play(Sfx.Cancel);
+                    return -1;
+                }
                 await Awaitable.NextFrameAsync(ct);
             }
         }

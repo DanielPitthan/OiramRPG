@@ -10,12 +10,19 @@ namespace Oiram.UI
     /// <summary>Peças de UI compartilhadas entre o menu de pausa e as lojas (linhas, detalhe de item, comparação).</summary>
     public static class ItemViews
     {
-        public static VisualElement Row(VisualElement parent, string text, string right, bool selected, bool enabled = true, string textClass = null)
+        public static VisualElement Row(VisualElement parent, string text, string right, bool selected, bool enabled = true, string textClass = null,
+            VisualElement icon = null)
         {
             var row = UiKit.El(parent, "menu-item");
             row.EnableInClassList("selected", selected);
             row.EnableInClassList("disabled", !enabled);
+            if (icon != null)
+            {
+                icon.AddToClassList("row-icon");
+                row.Add(icon);
+            }
             var label = UiKit.Text(row, text, "menu-text");
+            if (icon != null) label.AddToClassList("grow");
             if (!string.IsNullOrEmpty(textClass)) label.AddToClassList(textClass);
             if (!string.IsNullOrEmpty(right)) UiKit.Text(row, right, "menu-right");
             return row;
@@ -42,7 +49,9 @@ namespace Oiram.UI
                 var item = m.GetEquipped(slot);
                 var line = UiKit.El(parent, "stat-line");
                 UiKit.Text(line, RarityInfo.SlotName(slot), "small", "muted");
-                var name = UiKit.Text(line, ItemLabel(item), "small");
+                var right = UiKit.El(line, "row");
+                if (item != null) right.Add(ItemIcon.For(item, 24f));
+                var name = UiKit.Text(right, ItemLabel(item), "small");
                 if (item != null) UiKit.SetRarity(name, item.Rarity);
             }
         }
@@ -63,8 +72,8 @@ namespace Oiram.UI
             for (int i = first; i < Mathf.Min(items.Count, first + visibleRows); i++)
             {
                 var it = items[i];
-                Row(parent, $"[{RarityInfo.SlotName(it.Slot)}] {it.Name}", right != null ? right(it) : $"Nv {it.ItemLevel}", i == selected,
-                    member == null || member.CanEquip(it), RarityInfo.UssClass(it.Rarity));
+                Row(parent, it.Name, right != null ? right(it) : $"Nv {it.ItemLevel}", i == selected,
+                    member == null || member.CanEquip(it), RarityInfo.UssClass(it.Rarity), ItemIcon.For(it, 30f));
             }
             if (first + visibleRows < items.Count) UiKit.Text(parent, "▼", "small", "muted");
         }
@@ -72,7 +81,11 @@ namespace Oiram.UI
         /// <summary>Nome, raridade, atributos e comparação ▲▼ com o que o personagem usa no mesmo slot.</summary>
         public static void ItemDetail(VisualElement parent, ItemInstance item, PartyMember m, string priceLine = null)
         {
-            var name = UiKit.Text(parent, item.Name, "big");
+            var header = UiKit.El(parent, "row");
+            var icon = ItemIcon.For(item, 64f);
+            icon.style.marginRight = 12;
+            header.Add(icon);
+            var name = UiKit.Text(header, item.Name, "big", "grow");
             UiKit.SetRarity(name, item.Rarity);
             UiKit.Text(parent, $"{RarityInfo.Name(item.Rarity)} · Nv {item.ItemLevel} · {RarityInfo.SlotName(item.Slot)} ({RarityInfo.CategoryName(item.Category)})", "small", "muted");
             foreach (var mod in item.BaseModifiers) UiKit.Text(parent, StatText.Describe(mod), "small");

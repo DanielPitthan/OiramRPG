@@ -18,18 +18,23 @@ Este playtest leva uns 40–60 minutos.
    com os moradores e tente achar o **baú escondido**. Salve na pousada.
 3. Faça a **Mina Abandonada no Normal**. Depois tente uma dungeon no **Difícil** (e, se quiser sofrer, no Pesadelo).
    Volte à vila entre as descidas para ver o estoque novo do ferreiro.
-4. Feche o jogo e use **Continuar** no título para conferir o save.
+4. Feche o jogo **no meio de uma dungeon** e use **Continuar** no título: você deve voltar ao começo do mesmo andar
+   (o jogo salva sozinho no mapa-múndi e a cada andar; a pousada também salva).
 5. Experimente pelo menos uma vez: a *Investida* do Oiram (segurar e soltar), o menu **Jobs** (aprender uma habilidade com JP)
    e equipar algo do **Inventário**.
-6. Lá pela metade, aperte **F6**: os popups passam a mostrar quantos milissegundos você apertou cedo (−) ou tarde (+).
-   Veja se você está sempre adiantado ou atrasado.
-7. Se perder, continue: no Vale você acorda na fogueira; numa dungeon, no mapa-múndi — sempre com o loot coletado.
+6. Lá pela metade, abra **Tab ▸ Opções** e ligue **Mostrar ms do timing** (ou aperte **F6**): os popups passam a
+   mostrar quantos milissegundos você apertou cedo (−) ou tarde (+). Jogue um pouco também com o **anel de timing**
+   desligado e veja se ainda acerta.
+7. Use uma Poção pelo menu (**Tab ▸ Itens**) depois de uma batalha difícil.
+8. Se perder, continue: no Vale você acorda na fogueira; numa dungeon, no mapa-múndi — sempre com o loot coletado.
 
 ## O que observar (responda em poucas palavras)
 
 - Batalhas comuns: fáceis demais / ok / difíceis? Longas demais?
 - Golem: quantas tentativas? Pareceu justo?
 - Timed hits: o "PERFEITO" acontece quando você sente que acertou? Alguma ação parece impossível de acertar?
+  O anel ajuda ou atrapalha? O golpe perfeito "pesa" (congelada, estrelas, som)?
+- Som: alguma música cansa rápido? Algum efeito irritante ou alto demais?
 - Loot: empolgante? Muito item inútil? Você trocou de equipamento com frequência?
 - Dungeons: os mapas aleatórios ficaram variados? Cada dificuldade pareceu diferente? Valeu a pena arriscar o Difícil?
 - Cidade: os preços fazem sentido? O apostador é divertido? Achou o baú escondido sozinho?

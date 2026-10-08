@@ -5,6 +5,7 @@ using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Balance;
 using Oiram.Field;
+using Oiram.Inventory;
 using Oiram.Loot;
 using Oiram.UI;
 using Oiram.World;
@@ -54,6 +55,10 @@ namespace Oiram.DevTools
                 Application.runInBackground = true;
                 InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
                 keyboard = InputSystem.AddDevice<Keyboard>("TourKeyboard");
+                // O tour joga de verdade (salvamento automático, opções): nada disso pode tocar no save/opções do jogador.
+                SaveSystem.PathOverride = Path.Combine(folder, "tour_save.json");
+                if (File.Exists(SaveSystem.PathOverride)) File.Delete(SaveSystem.PathOverride);
+                GameSettings.Persist = false;
                 await Run();
             }
             catch (Exception e)
@@ -126,11 +131,24 @@ namespace Oiram.DevTools
             await Shot("vale");
 
             for (int i = 0; i < 12; i++) session.Inventory.TryAdd(session.Loot.CreateRandom(3, 150f));
+            session.Inventory.AddConsumable(db.Find<ConsumableDefinition>("pocao"), 3);
+            session.Inventory.AddConsumable(db.Find<ConsumableDefinition>("eter"), 1);
+            session.Party[1].CurrentHp = session.Party[1].MaxHp / 3;
             await Press(Key.Tab);
             await Press(Key.E);
             await Press(Key.DownArrow);
             await Wait(0.3f);
             await Shot("menu_inventario");
+            await Press(Key.E); // Itens
+            await Press(Key.Enter); // Poção -> escolher aliado (já aponta para quem está ferido)
+            await Wait(0.3f);
+            await Shot("menu_itens");
+            await Press(Key.Enter);
+            await Wait(0.3f);
+            await Press(Key.E); // Jobs
+            await Press(Key.E); // Opções
+            await Wait(0.3f);
+            await Shot("menu_opcoes");
             await Press(Key.Tab);
             await Wait(0.3f);
 
@@ -251,8 +269,18 @@ namespace Oiram.DevTools
             var enemy = SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FieldEnemy>(true)).First(e => !e.encounter.isBoss);
             director.StartBattle(enemy.encounter, enemy, true);
             while (!SceneManager.GetSceneByName("Battle_Arena").isLoaded) await Awaitable.NextFrameAsync();
+            manager = SceneManager.GetSceneByName("Battle_Arena").GetRootGameObjects().Select(g => g.GetComponentInChildren<BattleManager>()).First(m => m != null);
             await Wait(2.5f);
             await Shot("dungeon_batalha");
+            // Anel de timing no meio do caminho (os ataques da party mostram o anel mesmo com comandos automáticos).
+            deadline = Time.realtimeSinceStartup + 60f;
+            while (director.InBattle && (manager.Hud == null || !manager.Hud.RingVisible) && Time.realtimeSinceStartup < deadline)
+                await Awaitable.NextFrameAsync();
+            if (director.InBattle)
+            {
+                await Wait(0.18f);
+                await Shot("batalha_anel_timing");
+            }
             deadline = Time.realtimeSinceStartup + 120f;
             while (director.InBattle && Time.realtimeSinceStartup < deadline) await Awaitable.NextFrameAsync();
             await Wait(1f);

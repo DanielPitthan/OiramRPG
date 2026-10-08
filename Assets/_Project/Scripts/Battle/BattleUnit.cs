@@ -37,7 +37,7 @@ namespace Oiram.Battle
         public PartyMember Member { get; }
         public EnemyDefinition Enemy { get; }
         public int Level { get; }
-        public int MaxHp { get; }
+        public int MaxHp { get; private set; }
         public int Slot { get; set; }
         public bool HasBeenStolenFrom { get; set; }
 
@@ -76,6 +76,12 @@ namespace Oiram.Battle
                 else enemyHp = clamped;
                 if (clamped == 0) statuses.Clear();
             }
+        }
+
+        /// <summary>Depois de subir de nível na vitória, o PV máximo do herói cresce: a carta da HUD acompanha.</summary>
+        public void SyncMaxHp()
+        {
+            if (Member != null) MaxHp = Member.MaxHp;
         }
 
         public bool IsAlive => Hp > 0;

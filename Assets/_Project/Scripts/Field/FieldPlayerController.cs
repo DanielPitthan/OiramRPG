@@ -1,3 +1,4 @@
+using Oiram.Audio;
 using Oiram.Core;
 using UnityEngine;
 
@@ -15,6 +16,7 @@ namespace Oiram.Field
         public Transform visual;
 
         CharacterController controller;
+        CharacterRig rig;
         Vector3 velocity;
         float lastGroundedTime = -10f;
         float lastJumpPressedTime = -10f;
@@ -35,6 +37,18 @@ namespace Oiram.Field
             controller = GetComponent<CharacterController>();
             spawnPosition = lastSafePosition = transform.position;
             if (visual) visualScale = visual.localScale;
+            if (visual) rig = visual.GetComponent<CharacterRig>();
+        }
+
+        /// <summary>Troca o visual (o líder mudou de job: chapéu e arma acompanham).</summary>
+        public void SetVisual(Transform newVisual)
+        {
+            var rotation = visual ? visual.rotation : transform.rotation;
+            if (visual) Destroy(visual.gameObject);
+            visual = newVisual;
+            visual.rotation = rotation;
+            visualScale = visual.localScale;
+            rig = visual.GetComponent<CharacterRig>();
         }
 
         void Squash(float amount)
@@ -76,24 +90,42 @@ namespace Oiram.Field
                 lastJumpPressedTime = -10f;
                 lastGroundedTime = -10f;
                 Squash(-0.18f);
+                AudioManager.Play(Sfx.Jump, 0.7f);
             }
 
             velocity.y += gravity * dt;
             if (grounded && velocity.y < 0f) velocity.y = -2f;
 
+            float fallSpeed = velocity.y;
             var flags = controller.Move((move * moveSpeed + Vector3.up * velocity.y) * dt);
             if ((flags & CollisionFlags.Above) != 0 && velocity.y > 0f) velocity.y = 0f;
 
             if (move.sqrMagnitude > 0.001f && visual)
                 visual.rotation = Quaternion.Slerp(visual.rotation, Quaternion.LookRotation(move, Vector3.up), 1f - Mathf.Exp(-15f * dt));
+            if (rig)
+            {
+                rig.move = Mathf.MoveTowards(rig.move, controller.isGrounded ? Mathf.Clamp01(move.magnitude) : 0f, dt * 6f);
+                rig.airborne = !controller.isGrounded;
+            }
 
-            if (!wasGrounded && controller.isGrounded) Squash(0.2f);
+            if (!wasGrounded && controller.isGrounded)
+            {
+                Squash(0.2f);
+                if (fallSpeed < -7f) Land();
+            }
             wasGrounded = controller.isGrounded;
 
             if (transform.position.y < -6f) Teleport(lastSafePosition + Vector3.up * 0.5f);
 
             if (!Locked && GameInput.InteractDown)
                 FieldInteractable.Nearest(transform.position)?.Interact(this);
+        }
+
+        /// <summary>Poeirinha e "tum" ao cair de um pulo.</summary>
+        void Land()
+        {
+            AudioManager.Play(Sfx.Land, 0.6f);
+            Fx.Dust(transform.position + Vector3.up * 0.1f);
         }
 
         static Vector3 CameraRelative(Vector2 input)

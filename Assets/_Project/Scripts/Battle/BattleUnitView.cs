@@ -14,6 +14,8 @@ namespace Oiram.Battle
         float bobPhase;
         bool flying;
 
+        CharacterRig rig;
+
         public BattleUnit Unit { get; private set; }
         public Transform Visual { get; private set; }
         public Vector3 Home { get; set; }
@@ -36,7 +38,7 @@ namespace Oiram.Battle
             view.HomeFacing = facing;
 
             if (unit.Member != null)
-                view.Visual = Shapes.Hero(go.transform, unit.Member.Definition.color, unit.Member.Job.color);
+                view.Visual = Shapes.Hero(go.transform, unit.Member.Definition.color, unit.Member.Job.color, unit.Member.Job.id);
             else
             {
                 view.Visual = Shapes.EnemyFor(go.transform, unit.Enemy);
@@ -52,6 +54,7 @@ namespace Oiram.Battle
 
         void Init()
         {
+            rig = Visual.GetComponent<CharacterRig>();
             renderers = Visual.GetComponentsInChildren<Renderer>();
             originalMaterials = new Material[renderers.Length];
             for (int i = 0; i < renderers.Length; i++) originalMaterials[i] = renderers[i].sharedMaterial;
@@ -83,7 +86,7 @@ namespace Oiram.Battle
 
         public async Awaitable Flash(CancellationToken ct)
         {
-            var white = Palette.Get(Color.white);
+            var white = Palette.Flash;
             foreach (var r in renderers) if (r) r.sharedMaterial = white;
             await Tween.Delay(0.07f, ct);
             for (int i = 0; i < renderers.Length; i++) if (renderers[i]) renderers[i].sharedMaterial = originalMaterials[i];
@@ -104,6 +107,7 @@ namespace Oiram.Battle
                 if (!Visual) return;
                 float s = Tween.EaseOutQuad(k) * 0.18f;
                 Visual.localScale = new Vector3(baseScale.x * (1f + s), baseScale.y * (1f - s), baseScale.z * (1f + s));
+                if (rig) rig.armRaise = Tween.EaseOutQuad(k);
             }, ct);
         }
 
@@ -116,8 +120,10 @@ namespace Oiram.Battle
                 if (!Visual) return;
                 float s = Mathf.Sin(k * Mathf.PI) * 0.25f;
                 Visual.localScale = new Vector3(baseScale.x * (1f - s * 0.5f), baseScale.y * (1f + s), baseScale.z * (1f + s));
+                if (rig) rig.armRaise = Mathf.Lerp(1f, -1f, Tween.EaseOutQuad(k));
             }, ct);
             if (Visual) Visual.localScale = baseScale;
+            if (rig) _ = Tween.Run(0.25f, k => { if (rig) rig.armRaise = Mathf.Lerp(-1f, 0f, k); }, ct);
         }
 
         public Awaitable Hop(CancellationToken ct, float height = 0.5f, float duration = 0.3f) =>

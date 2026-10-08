@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Oiram.Audio;
 using Oiram.Battle;
 using Oiram.Core;
 using Oiram.Field;
@@ -52,6 +53,9 @@ namespace Oiram.World
             if (iso != null) iso.Snap();
             Refresh();
             hud.Refresh();
+            AudioManager.PlayMusic(MusicTrack.WorldMap);
+            session.ActiveRun = null;
+            if (SaveSystem.AutoSave(session, ResumePoint.WorldMap)) hud.Toast("Jogo salvo automaticamente.", "muted", 2.5f);
             if (!string.IsNullOrEmpty(session.PendingMessage))
             {
                 hud.Toast(session.PendingMessage, "gold-text", 7f);
@@ -74,9 +78,13 @@ namespace Oiram.World
             var center = new Vector3((min.x + max.x) / 2f, 0f, (min.y + max.y) / 2f);
             float size = Mathf.Max(max.x - min.x, max.y - min.y) + 10f;
 
-            Shapes.Part(PrimitiveType.Cube, root, center + Vector3.down * 1.2f, new Vector3(size + 60f, 0.1f, size + 60f), new Color(0.27f, 0.56f, 0.86f)).name = "Sea";
-            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 0.55f, new Vector3(size, 0.5f, size * 0.85f), new Color(0.58f, 0.42f, 0.27f)).name = "Cliff";
-            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 0.05f, new Vector3(size - 0.6f, 0.05f, size * 0.85f - 0.6f), new Color(0.45f, 0.72f, 0.36f)).name = "Land";
+            Shapes.Part(PrimitiveType.Plane, root, center + Vector3.down * 1.1f, new Vector3((size + 80f) / 10f, 1f, (size + 80f) / 10f),
+                Palette.Water(new Color(0.33f, 0.66f, 0.93f), new Color(0.2f, 0.45f, 0.82f))).name = "Sea";
+            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 1.06f, new Vector3(size + 1.4f, 0.005f, size * 0.85f + 1.4f),
+                Palette.Glow(new Color(1f, 1f, 1f, 0.38f), GlowShape.Solid, additive: false)).name = "Foam";
+            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 0.6f, new Vector3(size, 0.55f, size * 0.85f), new Color(0.62f, 0.44f, 0.28f)).name = "Cliff";
+            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 0.12f, new Vector3(size + 0.15f, 0.08f, size * 0.85f + 0.15f), new Color(0.38f, 0.64f, 0.3f)).name = "GrassLip";
+            Shapes.Part(PrimitiveType.Cylinder, root, center + Vector3.down * 0.05f, new Vector3(size - 0.6f, 0.05f, size * 0.85f - 0.6f), new Color(0.47f, 0.75f, 0.37f)).name = "Land";
 
             // Caminhos
             var drawn = new HashSet<(LocationDefinition, LocationDefinition)>();
@@ -87,10 +95,16 @@ namespace Oiram.World
                     drawn.Add((a, b));
                     var from = World(a);
                     var to = World(b);
-                    var mid = (from + to) / 2f;
-                    var path = Shapes.Part(PrimitiveType.Cube, root, mid + Vector3.up * 0.02f, new Vector3(0.7f, 0.05f, Vector3.Distance(from, to)), new Color(0.86f, 0.76f, 0.52f));
-                    path.transform.rotation = Quaternion.LookRotation(to - from);
-                    path.name = $"Path {a.id}-{b.id}";
+                    // Caminho pontilhado (pedrinhas), estilo mapa de RPG.
+                    var path = new GameObject($"Path {a.id}-{b.id}").transform;
+                    path.SetParent(root, false);
+                    float length = Vector3.Distance(from, to);
+                    int dots = Mathf.Max(2, Mathf.FloorToInt((length - 2.4f) / 0.55f));
+                    for (int i = 0; i <= dots; i++)
+                    {
+                        var p = Vector3.Lerp(from, to, Mathf.Lerp(1.2f / length, 1f - 1.2f / length, i / (float)dots));
+                        Shapes.Part(PrimitiveType.Cylinder, path, p + Vector3.up * 0.02f, new Vector3(0.26f, 0.03f, 0.26f), Palette.Toon(new Color(0.93f, 0.84f, 0.6f), 0.012f));
+                    }
                 }
 
             // Decoração determinística
@@ -103,16 +117,22 @@ namespace Oiram.World
                 var holder = new GameObject("Decor").transform;
                 holder.SetParent(root, false);
                 holder.position = p;
-                if (rng.Chance(0.7f)) Shapes.Tree(holder, 0.7f + rng.Value() * 0.4f);
-                else Shapes.Rock(holder, 0.8f + rng.Value() * 0.5f);
+                holder.rotation = Quaternion.Euler(0f, rng.Value() * 360f, 0f);
+                float pick = rng.Value();
+                if (pick < 0.6f) Shapes.Tree(holder, 0.7f + rng.Value() * 0.4f, i);
+                else if (pick < 0.8f) Shapes.Bush(holder, 0.9f, i);
+                else Shapes.Rock(holder, 0.8f + rng.Value() * 0.5f, i);
             }
+            Shapes.MeadowScatter(root, "WorldMapMeadow", center, size * 0.42f, 0f, 260, 77, new Color(0.36f, 0.62f, 0.3f),
+                p => locations.Any(l => Vector3.Distance(World(l), p) < 1.4f) || DistanceToPaths(locations, p) < 0.35f);
 
             foreach (var location in locations) nodes[location] = BuildNode(root, location);
 
             token = new GameObject("Token").transform;
             token.SetParent(root, false);
             var hero = session.Db.characters.FirstOrDefault();
-            var visual = Shapes.Hero(token, hero != null ? hero.color : Color.red, session.Party.FirstOrDefault()?.Job.color ?? Color.blue);
+            var leader = session.Party.FirstOrDefault();
+            var visual = Shapes.Hero(token, hero != null ? hero.color : Color.red, leader?.Job.color ?? Color.blue, leader?.Job.id);
             visual.localScale = Vector3.one * 0.8f;
             visual.localRotation = Quaternion.Euler(0f, WorldProps.FacingCamera, 0f);
             Shapes.BlobShadow(token, 0.3f).localPosition = Vector3.up * 0.02f;
@@ -149,12 +169,14 @@ namespace Oiram.World
             bool cleared = session.ClearedLocations.Contains(location.id);
             var baseColor = !unlocked ? new Color(0.45f, 0.45f, 0.48f) : cleared ? Palette.Gold : Color.white;
             Shapes.Part(PrimitiveType.Cylinder, node, new Vector3(0f, 0.12f, 0f), new Vector3(1.6f, 0.12f, 1.6f), baseColor).name = "Pedestal";
+            Shapes.Part(PrimitiveType.Cylinder, node, new Vector3(0f, 0.26f, 0f), new Vector3(1.25f, 0.03f, 1.25f), baseColor * 0.9f);
 
             var accent = unlocked ? location.color : location.color * 0.5f;
             switch (location.kind)
             {
                 case LocationKind.Field:
-                    Shapes.Part(PrimitiveType.Sphere, node, new Vector3(-0.9f, 0.1f, 0.9f), new Vector3(1.6f, 1f, 1.4f), accent);
+                    Shapes.Part(MeshLibrary.Icosphere(1, true, 0.06f, 3), node, new Vector3(-0.9f, 0.1f, 0.9f), new Vector3(1.7f, 1f, 1.5f), new Color(0.45f, 0.74f, 0.35f));
+                    Shapes.Part(PrimitiveType.Sphere, node, new Vector3(-0.75f, 0.58f, 1.05f), new Vector3(0.32f, 0.12f, 0.3f), Palette.Plain(Color.Lerp(accent, Color.white, 0.4f)));
                     Shapes.Tree(Child(node, new Vector3(0.9f, 0f, 0.9f)), 0.6f);
                     Shapes.Tree(Child(node, new Vector3(-1.1f, 0f, -0.3f)), 0.5f);
                     break;
@@ -162,19 +184,26 @@ namespace Oiram.World
                     for (int i = 0; i < 3; i++)
                     {
                         var p = new Vector3(-0.9f + i * 0.9f, 0f, 0.9f - (i % 2) * 0.6f);
-                        Shapes.Part(PrimitiveType.Cube, node, p + Vector3.up * 0.35f, new Vector3(0.6f, 0.7f, 0.6f), new Color(0.95f, 0.9f, 0.8f));
-                        Shapes.Part(PrimitiveType.Cube, node, p + Vector3.up * 0.82f, new Vector3(0.5f, 0.5f, 0.68f), accent, new Vector3(0f, 0f, 45f));
+                        Shapes.Part(MeshLibrary.RoundedBox(0.08f), node, p + Vector3.up * 0.35f, new Vector3(0.6f, 0.7f, 0.6f), new Color(0.97f, 0.92f, 0.82f));
+                        Shapes.Part(MeshLibrary.Cone(4, smooth: false), node, p + Vector3.up * 0.95f, new Vector3(0.95f, 0.5f, 0.95f), accent, new Vector3(0f, 45f, 0f));
+                        Shapes.Part(MeshLibrary.RoundedBox(0.2f), node, p + new Vector3(0f, 0.42f, 0.31f), new Vector3(0.18f, 0.16f, 0.03f), Palette.Emissive(new Color(1f, 0.85f, 0.5f), 0.9f));
                     }
                     break;
                 default:
-                    Shapes.Part(PrimitiveType.Sphere, node, new Vector3(0f, 0.3f, 0.7f), new Vector3(2f, 1.6f, 1.4f), new Color(0.45f, 0.42f, 0.4f));
-                    Shapes.Part(PrimitiveType.Cube, node, new Vector3(0f, 0.45f, 0.05f), new Vector3(0.7f, 0.85f, 0.3f), new Color(0.06f, 0.05f, 0.07f), new Vector3(0f, WorldProps.FacingCamera, 0f));
+                    Shapes.Part(MeshLibrary.Icosphere(1, true, 0.12f, location.id.Length), node, new Vector3(0f, 0.35f, 0.7f), new Vector3(2.1f, 1.7f, 1.5f), new Color(0.5f, 0.47f, 0.45f));
+                    Shapes.Part(PrimitiveType.Sphere, node, new Vector3(0f, 0.42f, 0.05f), new Vector3(0.75f, 0.9f, 0.3f), Palette.Plain(new Color(0.05f, 0.04f, 0.07f)), new Vector3(0f, WorldProps.FacingCamera, 0f));
                     for (int i = 0; i < 3; i++)
-                        Shapes.Part(PrimitiveType.Cube, node, new Vector3(-0.9f + i * 0.9f, 0.3f + (i % 2) * 0.2f, 1.3f), new Vector3(0.25f, 0.7f, 0.25f), accent, new Vector3(10f, 45f, 10f));
+                        Shapes.Part(MeshLibrary.Cone(5, smooth: false), node, new Vector3(-0.9f + i * 0.9f, 0.4f + (i % 2) * 0.2f, 1.3f), new Vector3(0.28f, 0.8f, 0.28f),
+                            unlocked ? Palette.Emissive(accent, 1.2f, Palette.Outline) : Palette.Get(accent), new Vector3(10f, 45f, 10f));
                     break;
             }
             if (!unlocked)
-                Shapes.Part(PrimitiveType.Cube, node, new Vector3(0f, 1.6f, 0f), new Vector3(0.35f, 0.45f, 0.15f), new Color(0.3f, 0.3f, 0.32f)).name = "Lock";
+            {
+                var padlock = Shapes.Pivot(node, "Lock", new Vector3(0f, 1.6f, 0f), new Vector3(0f, WorldProps.FacingCamera, 0f));
+                Shapes.Part(MeshLibrary.RoundedBox(0.2f), padlock, Vector3.zero, new Vector3(0.42f, 0.36f, 0.16f), Palette.Glossy(new Color(0.55f, 0.56f, 0.62f)));
+                Shapes.Part(PrimitiveType.Cylinder, padlock, new Vector3(0f, 0.25f, 0f), new Vector3(0.3f, 0.02f, 0.3f), Palette.Glossy(new Color(0.55f, 0.56f, 0.62f)), new Vector3(90f, 0f, 0f));
+                Wiggle.Add(padlock.gameObject, Wiggle.Mode.Bob, Vector3.up, 0.08f, 2f);
+            }
             return node;
         }
 
@@ -288,11 +317,13 @@ namespace Oiram.World
                 tierMenu.HandleNavigation();
                 if (GameInput.CancelDown)
                 {
+                    AudioManager.Play(Sfx.Cancel);
                     choosingTier = false;
                     UiKit.Show(tierPanel, false);
                 }
                 else if (GameInput.ConfirmDown)
                 {
+                    AudioManager.Play(Sfx.Confirm);
                     choosingTier = false;
                     UiKit.Show(tierPanel, false);
                     SceneFlow.EnterDungeon(current, (DifficultyTier)tierMenu.Index);
@@ -355,6 +386,7 @@ namespace Oiram.World
                     var a = Vector3.Lerp(from, to, i / (float)hops);
                     var b = Vector3.Lerp(from, to, (i + 1) / (float)hops);
                     token.position = a;
+                    AudioManager.Play(Sfx.Jump, 0.35f, 1.3f);
                     await Tween.Arc(token, b, 0.35f, 0.14f, destroyCancellationToken);
                 }
                 token.position = to;
@@ -374,9 +406,11 @@ namespace Oiram.World
         {
             if (!session.IsLocationUnlocked(current))
             {
+                AudioManager.Play(Sfx.Cancel, 0.8f, 0.8f);
                 hud.Toast($"Bloqueado: conclua {current.requires.displayName} primeiro.", "bad");
                 return;
             }
+            AudioManager.Play(Sfx.Confirm);
             if (current.IsDungeon) OpenTierMenu();
             else SceneFlow.EnterLocation(current, "saida");
         }

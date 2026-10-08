@@ -2,17 +2,20 @@
 
 .oiram-root {
     font-size: 24px;
-    color: rgb(245, 245, 245);
+    color: rgb(250, 246, 238);
+    -unity-font-definition: resource("UI/Fonts/Fredoka");
 }
 
 .text {
-    color: rgb(245, 245, 245);
-    -unity-text-outline-width: 0.6px;
-    -unity-text-outline-color: rgba(0, 0, 0, 0.8);
+    color: rgb(250, 246, 238);
+    -unity-font-style: bold;
+    -unity-text-outline-width: 0.7px;
+    -unity-text-outline-color: rgba(10, 6, 20, 0.85);
+    text-shadow: 0 2px 0 rgba(10, 6, 20, 0.55);
     white-space: normal;
 }
 
-.muted { color: rgba(255, 255, 255, 0.55); }
+.muted { color: rgba(240, 236, 255, 0.72); }
 .good { color: rgb(110, 230, 120); }
 .bad { color: rgb(255, 110, 100); }
 .gold-text { color: rgb(255, 214, 90); }
@@ -21,21 +24,25 @@
 .big { font-size: 34px; -unity-font-style: bold; }
 .huge { font-size: 64px; -unity-font-style: bold; -unity-text-outline-width: 2px; }
 
+/* Molduras 9-slice geradas por OiramRPG ▸ Interface ▸ Gerar molduras da UI (Resources/UI/Skin). */
 .panel {
-    background-color: rgba(18, 20, 40, 0.88);
-    border-width: 3px;
-    border-color: rgba(255, 255, 255, 0.85);
-    border-radius: 14px;
-    padding: 12px 16px;
+    background-image: resource("UI/Skin/panel");
+    -unity-slice-left: 24; -unity-slice-right: 24; -unity-slice-top: 24; -unity-slice-bottom: 24;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 16px 20px;
 }
 
 .panel-light {
-    background-color: rgba(30, 34, 64, 0.82);
-    border-width: 2px;
-    border-color: rgba(255, 255, 255, 0.35);
-    border-radius: 10px;
-    padding: 8px 12px;
+    background-image: resource("UI/Skin/panel_light");
+    -unity-slice-left: 16; -unity-slice-right: 16; -unity-slice-top: 16; -unity-slice-bottom: 16;
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 9px 14px;
 }
+
+.item-icon { margin-right: 8px; }
+.row-icon { margin-right: 10px; }
 
 .row { flex-direction: row; align-items: center; }
 .grow { flex-grow: 1; }
@@ -47,6 +54,7 @@
 .rarity-epic { color: rgb(190, 110, 255); }
 .rarity-legendary { color: rgb(255, 160, 40); }
 .rarity-relic { color: rgb(70, 240, 225); -unity-font-style: bold; }
+.rarity-legendary, .rarity-relic { -unity-text-outline-color: rgb(60, 20, 0); }
 
 /* ---------- Menus ---------- */
 .menu { min-width: 260px; }
@@ -55,12 +63,17 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 3px 12px;
+    padding: 4px 14px;
     margin: 1px 0;
-    border-radius: 8px;
+    border-radius: 10px;
 }
-.menu-item.selected { background-color: rgba(255, 205, 70, 0.95); }
-.menu-item.selected > .text { color: rgb(35, 22, 8); -unity-text-outline-width: 0; }
+.menu-item.selected {
+    background-image: resource("UI/Skin/button_gold");
+    -unity-slice-left: 14; -unity-slice-right: 14; -unity-slice-top: 14; -unity-slice-bottom: 14;
+    background-color: rgba(0, 0, 0, 0);
+    translate: 6px 0;
+}
+.menu-item.selected > .text { color: rgb(48, 24, 6); -unity-text-outline-width: 0; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45); }
 .menu-item.disabled > .text { color: rgba(255, 255, 255, 0.33); }
 .menu-item.selected.disabled > .text { color: rgba(35, 22, 8, 0.45); }
 .menu-text { font-size: 26px; flex-shrink: 1; }
@@ -68,17 +81,28 @@
 
 /* ---------- Barras ---------- */
 .bar {
-    height: 12px;
-    background-color: rgba(0, 0, 0, 0.55);
-    border-radius: 6px;
+    height: 14px;
+    background-image: resource("UI/Skin/bar_track");
+    -unity-slice-left: 8; -unity-slice-right: 8; -unity-slice-top: 7; -unity-slice-bottom: 7;
+    background-color: rgba(0, 0, 0, 0);
+    border-radius: 7px;
     overflow: hidden;
-    margin: 3px 0;
+    margin: 4px 0;
+    padding: 2px;
 }
-.bar-fill { height: 100%; width: 100%; background-color: rgb(90, 220, 110); border-radius: 6px; }
-.bar-fill.low { background-color: rgb(240, 90, 80); }
-.bar-xp { height: 100%; background-color: rgb(120, 180, 255); border-radius: 6px; }
-.bar-charge { height: 100%; background-color: rgb(255, 200, 60); border-radius: 6px; }
-.bar-charge.full { background-color: rgb(255, 255, 255); }
+.bar-fill, .bar-xp, .bar-charge {
+    height: 100%;
+    width: 100%;
+    border-radius: 5px;
+    -unity-slice-left: 7; -unity-slice-right: 7; -unity-slice-top: 7; -unity-slice-bottom: 7;
+    transition-property: width;
+    transition-duration: 0.25s;
+}
+.bar-fill { background-image: resource("UI/Skin/bar_green"); }
+.bar-fill.low { background-image: resource("UI/Skin/bar_red"); }
+.bar-xp { background-image: resource("UI/Skin/bar_blue"); }
+.bar-charge { background-image: resource("UI/Skin/bar_gold"); transition-duration: 0s; }
+.bar-charge.full { background-image: resource("UI/Skin/bar_white"); }
 
 /* ---------- Transições ---------- */
 .fader {
@@ -97,16 +121,16 @@
 }
 .turn-chip {
     font-size: 20px;
-    padding: 3px 12px;
+    padding: 4px 14px;
     margin: 0 4px;
-    border-radius: 12px;
-    background-color: rgba(18, 20, 40, 0.75);
-    border-width: 2px;
+    border-radius: 14px;
+    background-color: rgba(28, 30, 62, 0.88);
+    border-width: 2.5px;
     border-color: rgba(255, 255, 255, 0.3);
 }
 .turn-chip.party { border-color: rgb(110, 190, 255); }
 .turn-chip.enemy { border-color: rgb(255, 120, 110); }
-.turn-chip.current { background-color: rgba(255, 205, 70, 0.95); color: rgb(35, 22, 8); -unity-text-outline-width: 0; }
+.turn-chip.current { background-color: rgb(255, 205, 70); border-color: rgb(255, 245, 200); color: rgb(48, 24, 6); -unity-text-outline-width: 0; text-shadow: 0 0 0 rgba(0,0,0,0); scale: 1.12 1.12; }
 .turn-chip.done { opacity: 0.35; }
 
 .banner {
@@ -114,9 +138,12 @@
     top: 74px;
     left: 0; right: 0;
     -unity-text-align: middle-center;
-    font-size: 36px;
+    font-size: 40px;
     -unity-font-style: bold;
-    -unity-text-outline-width: 1.5px;
+    color: rgb(255, 236, 170);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgb(40, 20, 50);
+    text-shadow: 0 3px 0 rgba(20, 10, 30, 0.7);
 }
 
 .target-info {
@@ -135,7 +162,10 @@
     align-items: flex-end;
 }
 .party-card { width: 270px; margin-left: 10px; }
-.party-card.active { border-color: rgb(255, 205, 70); }
+.party-card.active {
+    background-image: resource("UI/Skin/panel_gold");
+    translate: 0 -10px;
+}
 .party-card.fallen { opacity: 0.55; }
 .energy-box { margin-left: 10px; align-items: center; }
 
@@ -153,10 +183,11 @@
 
 .popup {
     position: absolute;
-    font-size: 44px;
+    font-size: 46px;
     -unity-font-style: bold;
-    -unity-text-outline-width: 2px;
-    -unity-text-outline-color: rgb(0, 0, 0);
+    -unity-text-outline-width: 2.5px;
+    -unity-text-outline-color: rgb(25, 12, 30);
+    text-shadow: 0 3px 0 rgba(20, 10, 30, 0.6);
     -unity-text-align: middle-center;
     width: 400px;
     margin-left: -200px;
@@ -173,7 +204,7 @@
     margin-left: -130px;
     align-items: center;
 }
-.enemy-tag .bar { width: 120px; height: 8px; }
+.enemy-tag .bar { width: 130px; height: 12px; }
 
 .charge {
     position: absolute;
@@ -252,36 +283,85 @@
 }
 .map-label.selected { border-color: rgb(255, 205, 70); border-width: 2px; }
 .title-logo {
-    font-size: 110px;
+    font-size: 132px;
     -unity-font-style: bold;
-    color: rgb(255, 214, 90);
-    -unity-text-outline-width: 3px;
-    -unity-text-outline-color: rgb(60, 30, 10);
-    margin-bottom: 4px;
+    color: rgb(255, 222, 96);
+    -unity-text-outline-width: 5px;
+    -unity-text-outline-color: rgb(92, 38, 16);
+    text-shadow: 0 9px 0 rgba(60, 22, 40, 0.75);
+    margin-bottom: 0;
 }
-.title-sub { font-size: 30px; margin-bottom: 30px; }
+.title-sub {
+    font-size: 30px;
+    margin-bottom: 30px;
+    padding: 4px 18px;
+    border-radius: 16px;
+    background-color: rgba(28, 30, 62, 0.7);
+    color: rgb(255, 245, 225);
+}
 .title-menu { min-width: 420px; }
 
 /* ---------- Menu de pausa ---------- */
 .pause-root {
     position: absolute;
     left: 0; top: 0; right: 0; bottom: 0;
-    background-color: rgba(5, 6, 14, 0.7);
+    background-color: rgba(12, 10, 32, 0.72);
     padding: 40px 60px;
 }
 .tabs { flex-direction: row; margin-bottom: 14px; }
 .tab {
     font-size: 30px;
-    padding: 6px 22px;
+    padding: 7px 24px;
     margin-right: 8px;
-    border-radius: 12px;
-    background-color: rgba(30, 34, 64, 0.8);
+    background-image: resource("UI/Skin/tab");
+    -unity-slice-left: 16; -unity-slice-right: 16; -unity-slice-top: 16; -unity-slice-bottom: 16;
 }
-.tab.selected { background-color: rgba(255, 205, 70, 0.95); color: rgb(35, 22, 8); -unity-text-outline-width: 0; }
+.tab.selected {
+    background-image: resource("UI/Skin/button_gold");
+    -unity-slice-left: 14; -unity-slice-right: 14; -unity-slice-top: 14; -unity-slice-bottom: 14;
+    color: rgb(48, 24, 6);
+    -unity-text-outline-width: 0;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+    translate: 0 -4px;
+}
 .pause-body { flex-direction: row; flex-grow: 1; }
 .column { flex-grow: 1; flex-basis: 0; margin-right: 14px; }
 .column-narrow { width: 640px; margin-right: 14px; }
 .member-card { flex-grow: 1; flex-basis: 0; margin-right: 14px; }
 .stat-line { flex-direction: row; justify-content: space-between; }
 .footer { margin-top: 10px; }
-.section-title { font-size: 26px; -unity-font-style: bold; margin-top: 8px; margin-bottom: 2px; color: rgb(255, 214, 90); }
+.section-title {
+    font-size: 27px;
+    -unity-font-style: bold;
+    margin-top: 10px;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
+    color: rgb(255, 214, 90);
+    border-bottom-width: 2px;
+    border-color: rgba(255, 214, 90, 0.35);
+}
+
+/* ---------- game feel ---------- */
+.notice { min-height: 34px; margin-top: 8px; font-size: 24px; }
+.popup.crit { font-size: 46px; color: rgb(255, 120, 70); }
+.timing-ring {
+    position: absolute;
+    border-width: 5px;
+    border-color: rgba(255, 255, 255, 0.95);
+    border-top-left-radius: 50%; border-top-right-radius: 50%;
+    border-bottom-left-radius: 50%; border-bottom-right-radius: 50%;
+}
+.timing-target {
+    position: absolute;
+    border-width: 3px;
+    border-color: rgba(255, 205, 70, 0.9);
+    background-color: rgba(255, 205, 70, 0.12);
+    border-top-left-radius: 50%; border-top-right-radius: 50%;
+    border-bottom-left-radius: 50%; border-bottom-right-radius: 50%;
+}
+.timing-ring.block { border-color: rgba(140, 210, 255, 0.95); }
+.timing-target.block { border-color: rgba(140, 210, 255, 0.9); background-color: rgba(140, 210, 255, 0.12); }
+.timing-ring.ready { border-color: rgb(255, 205, 70); }
+.timing-ring.perfect, .timing-target.perfect { border-color: rgb(255, 230, 90); background-color: rgba(255, 230, 90, 0.45); }
+.timing-ring.good, .timing-target.good { border-color: rgb(120, 255, 140); background-color: rgba(120, 255, 140, 0.3); }
+.timing-ring.miss, .timing-target.miss { border-color: rgba(200, 200, 200, 0.6); background-color: rgba(0, 0, 0, 0); }
