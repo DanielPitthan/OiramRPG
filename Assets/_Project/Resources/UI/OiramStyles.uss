@@ -365,3 +365,4 @@
 .timing-ring.perfect, .timing-target.perfect { border-color: rgb(255, 230, 90); background-color: rgba(255, 230, 90, 0.45); }
 .timing-ring.good, .timing-target.good { border-color: rgb(120, 255, 140); background-color: rgba(120, 255, 140, 0.3); }
 .timing-ring.miss, .timing-target.miss { border-color: rgba(200, 200, 200, 0.6); background-color: rgba(0, 0, 0, 0); }
+.tab-key { font-size: 20px; color: rgba(255, 236, 190, 0.8); margin: 0 10px; -unity-text-align: middle-center; align-self: center; }

@@ -21,6 +21,8 @@ namespace Oiram.Core
         public static InputAction Secondary { get; private set; }
         public static InputAction PrevTab { get; private set; }
         public static InputAction NextTab { get; private set; }
+        /// <summary>Tecla Tab: abre o menu no mapa e, dentro dele, troca de aba (Shift+Tab volta).</summary>
+        public static InputAction TabKey { get; private set; }
 
         /// <summary>Disparado no aperto de Confirmar, com o horário (em <see cref="Now"/>) do evento.</summary>
         public static event Action<double> ConfirmPressed;
@@ -35,6 +37,10 @@ namespace Oiram.Core
         public static bool SecondaryDown => Ready && Secondary.WasPressedThisFrame();
         public static bool PrevTabDown => Ready && PrevTab.WasPressedThisFrame();
         public static bool NextTabDown => Ready && NextTab.WasPressedThisFrame();
+        public static bool TabKeyDown => Ready && TabKey.WasPressedThisFrame();
+        public static bool ShiftHeld => Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+        /// <summary>Abrir o menu de pausa: Tab, I, Esc (teclado) ou Start (controle).</summary>
+        public static bool OpenMenuDown => MenuDown || TabKeyDown || CancelDown;
         public static bool JumpDown => Ready && Jump.WasPressedThisFrame();
         public static bool InteractDown => Ready && Interact.WasPressedThisFrame();
         public static Vector2 MoveValue => Ready ? Move.ReadValue<Vector2>() : Vector2.zero;
@@ -80,7 +86,8 @@ namespace Oiram.Core
             Interact = Button("Interact", "<Keyboard>/e", "<Keyboard>/enter", "<Gamepad>/buttonWest");
             Confirm = Button("Confirm", "<Keyboard>/space", "<Keyboard>/enter", "<Keyboard>/numpadEnter", "<Keyboard>/z", "<Gamepad>/buttonSouth");
             Cancel = Button("Cancel", "<Keyboard>/escape", "<Keyboard>/backspace", "<Keyboard>/x", "<Gamepad>/buttonEast");
-            Menu = Button("Menu", "<Keyboard>/tab", "<Keyboard>/i", "<Gamepad>/start");
+            Menu = Button("Menu", "<Keyboard>/i", "<Gamepad>/start");
+            TabKey = Button("TabKey", "<Keyboard>/tab");
             Secondary = Button("Secondary", "<Keyboard>/f", "<Gamepad>/buttonNorth");
             PrevTab = Button("PrevTab", "<Keyboard>/q", "<Gamepad>/leftShoulder");
             NextTab = Button("NextTab", "<Keyboard>/e", "<Gamepad>/rightShoulder");

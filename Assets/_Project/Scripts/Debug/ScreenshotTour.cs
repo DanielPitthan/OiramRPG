@@ -149,7 +149,7 @@ namespace Oiram.DevTools
             await Press(Key.E); // Opções
             await Wait(0.3f);
             await Shot("menu_opcoes");
-            await Press(Key.Tab);
+            await Press(Key.I);
             await Wait(0.3f);
 
             // ---------------- batalha do Vale com comandos de verdade
@@ -256,7 +256,7 @@ namespace Oiram.DevTools
             await Press(Key.E);
             await Wait(0.3f);
             await Shot("menu_reliquia");
-            await Press(Key.Tab);
+            await Press(Key.I);
             await Wait(0.3f);
 
             // ---------------- dungeon
