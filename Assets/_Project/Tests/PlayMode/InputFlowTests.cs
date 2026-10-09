@@ -77,5 +77,32 @@ namespace Oiram.Tests
             Assert.IsFalse(director.InputLocked, "Esc fecha o menu");
             Assert.AreEqual(1f, Time.timeScale);
         }
+
+        [UnityTest]
+        public IEnumerator Tab_CyclesTabsInsideTheMenu_AndEscOpensAndCloses()
+        {
+            var load = SceneManager.LoadSceneAsync("Field_Vale", LoadSceneMode.Single);
+            while (!load.isDone) yield return null;
+            yield return null;
+            var director = FieldDirector.Instance;
+
+            yield return Press(Key.Tab);
+            Assert.IsTrue(director.InputLocked, "Tab abre o menu");
+            yield return Press(Key.Tab);
+            yield return Press(Key.Tab);
+            Assert.IsTrue(director.InputLocked, "Tab dentro do menu troca de aba, não fecha");
+            yield return Press(Key.RightArrow);
+            Assert.IsTrue(director.InputLocked);
+            yield return Press(Key.I);
+            Assert.IsFalse(director.InputLocked, "I fecha o menu");
+            yield return null;
+            Assert.IsFalse(director.InputLocked, "não reabre no frame seguinte");
+
+            yield return Press(Key.Escape);
+            Assert.IsTrue(director.InputLocked, "Esc também abre o menu no mapa");
+            yield return Press(Key.Escape);
+            Assert.IsFalse(director.InputLocked, "e Esc fecha");
+            Assert.AreEqual(1f, Time.timeScale);
+        }
     }
 }

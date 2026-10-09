@@ -519,13 +519,20 @@ namespace Oiram.Battle
 
         sealed class TimedPress : IDisposable
         {
+            /// <summary>Quanto tempo depois de a janela fechar um aperto ainda conta como "tarde" (só para avisar e registrar).</summary>
+            const double LateGrace = 0.4;
+            static int armed;
+
             readonly IDisposable subscription;
             readonly string kind;
             readonly string abilityId;
             readonly float latency;
+            readonly int id;
             bool disposed;
             public TimedHitWindow Window { get; }
             public BattleUnit Presser { get; }
+            /// <summary>Chamado com o desvio (s) quando o jogador aperta depois de a janela fechar.</summary>
+            public Action<double> OnLate;
 
             public TimedPress(BattleUnit presser, float secondsToImpact, BalanceConfig balance, string kind, string abilityId = null)
             {
@@ -538,6 +545,7 @@ namespace Oiram.Battle
                 var (perfect, good) = TimedHitEvaluator.Windows(balance, Presser?.Stat(StatType.TimingWindow) ?? 0f);
                 // O impacto aparece na tela um pouco depois do quadro lógico: desloca o centro da janela.
                 Window = new TimedHitWindow(now, now + secondsToImpact / scale + latency, perfect, good);
+                id = ++armed;
                 if (Presser != null) subscription = GameInput.ListenConfirm(Window.RegisterPress);
             }
 
@@ -552,7 +560,39 @@ namespace Oiram.Battle
             {
                 if (disposed) return;
                 disposed = true;
-                subscription?.Dispose();
+                if (Presser == null || Window.HasInput)
+                {
+                    subscription?.Dispose();
+                    Log(late: false);
+                    return;
+                }
+                // Ninguém apertou dentro da janela: continua ouvindo um pouco para avisar "Tarde!" (antes isso sumia em silêncio).
+                WatchLatePress();
+            }
+
+            async void WatchLatePress()
+            {
+                try
+                {
+                    double until = Window.CloseAt + LateGrace;
+                    while (GameInput.Now < until && !Window.HasInput && armed == id && Application.isPlaying)
+                        await Awaitable.NextFrameAsync();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    subscription?.Dispose();
+                    bool late = Window.HasInput;
+                    if (late) OnLate?.Invoke(Window.PressOffset);
+                    Log(late);
+                }
+            }
+
+            void Log(bool late)
+            {
                 if (Presser == null) return;
                 PlaytestLog.Write(new PlaytestEvent
                 {
@@ -566,16 +606,42 @@ namespace Oiram.Battle
                     perfectMs = (float)(Window.PerfectWindow * 1000.0),
                     goodMs = (float)(Window.GoodWindow * 1000.0),
                     latencyMs = latency * 1000f,
+                    detail = late ? "tarde" : null,
                 });
             }
         }
 
         /// <summary>Arma a janela de timing e, se for o jogador, mostra o anel sobre <paramref name="ringAt"/>.</summary>
+        static int defenseHints, lateHints;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetHints() => defenseHints = lateHints = 0;
+
         TimedPress Press(BattleUnit presser, float secondsToImpact, string kind, string abilityId, Vector3 ringAt, bool block)
         {
             var press = new TimedPress(presser, secondsToImpact, Session.Balance, kind, abilityId);
-            if (press.Presser != null && GameSettings.TimingRing)
+            if (press.Presser == null) return press;
+            if (GameSettings.TimingRing)
                 Hud.ShowTimingRing(press.Window, ringAt, press.Window.ImpactAt - Session.Balance.timingLatencyCompensation, block);
+            // As duas primeiras defesas da sessão explicam o que fazer (muita gente não sabe que dá para defender).
+            if (block && defenseHints < 2 && !autoAdvance)
+            {
+                defenseHints++;
+                Hud.ShowBanner("Defenda! Aperte Confirmar quando o golpe chegar.", 1.6f);
+            }
+            press.OnLate = offset =>
+            {
+                if (this == null || Hud == null) return;
+                string text = "Tarde!";
+                if (TimingFeedback.ShowMilliseconds) text += $" ({TimingFeedback.Milliseconds(offset)})";
+                Hud.Popup(ringAt + Vector3.up * 0.9f, text, "status", 0.8f);
+                AudioManager.Play(Sfx.Miss, 0.6f);
+                if (lateHints < 2)
+                {
+                    lateHints++;
+                    Hud.ShowBanner("Um pouco antes! Aperte quando o anel encostar no círculo.", 1.6f);
+                }
+            };
             return press;
         }
 
@@ -781,6 +847,8 @@ namespace Oiram.Battle
                 Hud.Popup(view.Top + Vector3.up * 0.6f, TimedHitEvaluator.Label(window.Result) + ms, "timing");
                 if (window.Result == TimedHitResult.Perfect) AudioManager.Play(Sfx.ChargeFull, 1f, 1.2f);
             }
+            else if (window.ReleasedAt.HasValue && window.Charge01(window.ReleasedAt.Value) < 0.7f)
+                Hud.Popup(view.Top + Vector3.up * 0.6f, "Segure até a barra encher!" + ms, "status", 1.2f);
             else if (window.PressedAt.HasValue) Hud.Popup(view.Top + Vector3.up * 0.6f, "Carga falhou" + ms, "status", 0.8f);
             return window.Result;
         }
