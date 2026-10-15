@@ -175,7 +175,7 @@ namespace Oiram.UI
 
         bool UpdateBlacksmith()
         {
-            if (GameInput.PrevTabDown || GameInput.NextTabDown)
+            if (GameInput.PrevTabDown || GameInput.NextTabDown || GameInput.TabKeyDown)
             {
                 sellMode = !sellMode;
                 index = 0;

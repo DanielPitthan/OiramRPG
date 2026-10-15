@@ -137,7 +137,7 @@ namespace Oiram.Field
             if (pauseWasOpen && !pauseOpen) RefreshPlayerLook();
             pauseWasOpen = pauseOpen;
             if (InBattle || ModalOpen) return;
-            if (!pauseMenu.IsOpen && GameInput.MenuDown)
+            if (!pauseMenu.IsOpen && !InputLocked && pauseMenu.ClosedFrame != Time.frameCount && GameInput.OpenMenuDown)
             {
                 pauseMenu.Open();
                 hud.SetPrompt(null);

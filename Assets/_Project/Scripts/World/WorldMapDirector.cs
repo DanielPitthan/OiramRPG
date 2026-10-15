@@ -331,7 +331,7 @@ namespace Oiram.World
                 return;
             }
 
-            if (GameInput.MenuDown)
+            if (pauseMenu.ClosedFrame != Time.frameCount && GameInput.OpenMenuDown)
             {
                 pauseMenu.Open();
                 return;

@@ -36,8 +36,8 @@ personagem nem áudio: tudo é montado pelo jogo (shaders próprios, malhas gera
 | Interagir (baú, fogueira, lojas, moradores, placas, escadas) | E ou Enter | X (Oeste) |
 | Confirmar / **timed hit** | Espaço, Enter ou Z | A (Sul) |
 | Cancelar / voltar | Esc, Backspace ou X | B (Leste) |
-| Menu de pausa | Tab ou I | Start |
-| Trocar aba do menu | Q / E | LB / RB |
+| Menu de pausa (abrir/fechar) | Tab, I ou Esc (Esc/I fecham) | Start |
+| Trocar aba do menu | Tab (Shift+Tab volta), Q / E | LB / RB |
 | Vender item (inventário) | F | Y (Norte) |
 
 **Timed hits:** aperte Confirmar no instante do impacto do seu ataque (BOM ×1.25, PERFEITO ×1.5) e

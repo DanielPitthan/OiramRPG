@@ -40,6 +40,9 @@ namespace Oiram.UI
         bool pickingTarget;
         float noticeUntil;
         int openedFrame;
+
+        /// <summary>Frame em que o menu fechou (a mesma tecla não reabre o menu no mesmo frame).</summary>
+        public int ClosedFrame { get; private set; } = -1;
         float previousTimeScale = 1f;
 
         public bool IsOpen { get; private set; }
@@ -88,6 +91,7 @@ namespace Oiram.UI
         public void Close()
         {
             IsOpen = false;
+            ClosedFrame = Time.frameCount;
             Time.timeScale = previousTimeScale;
             UiKit.Show(panel, false);
             hud.SetVisible(true);
@@ -106,9 +110,12 @@ namespace Oiram.UI
                 Close();
                 return;
             }
-            if (GameInput.PrevTabDown || GameInput.NextTabDown)
+            // Trocar de aba: Tab / Shift+Tab, Q / E, LB / RB — e ←→ na aba Equipe (que não usa as setas).
+            bool tabKey = GameInput.TabKeyDown;
+            int partyNav = tab == Tab.Party ? GameInput.Nav.x : 0;
+            if (GameInput.PrevTabDown || GameInput.NextTabDown || tabKey || partyNav != 0)
             {
-                int step = GameInput.NextTabDown ? 1 : -1;
+                int step = GameInput.PrevTabDown || (tabKey && GameInput.ShiftHeld) || partyNav < 0 ? -1 : 1;
                 tab = (Tab)(((int)tab + step + TabNames.Length) % TabNames.Length);
                 jobsMode = JobsMode.JobList;
                 pickingTarget = false;
@@ -411,8 +418,10 @@ namespace Oiram.UI
         void Render()
         {
             tabsRow.Clear();
+            UiKit.Text(tabsRow, "Q ◀", "tab-key");
             for (int i = 0; i < TabNames.Length; i++)
                 UiKit.Text(tabsRow, TabNames[i], "tab").EnableInClassList("selected", i == (int)tab);
+            UiKit.Text(tabsRow, "▶ E / Tab", "tab-key");
             info.text = $"Ouro {S.Inventory.Gold}    PE {S.Energy}/{S.MaxEnergy}";
 
             body.Clear();
@@ -420,27 +429,27 @@ namespace Oiram.UI
             {
                 case Tab.Party:
                     RenderParty();
-                    footer.text = "Q/E: trocar aba    Esc/Tab: fechar";
+                    footer.text = "Tab, Q/E ou ←→: trocar aba    Esc: fechar";
                     break;
                 case Tab.Inventory:
                     RenderInventory();
-                    footer.text = "↑↓: item    ←→: personagem    Enter/Espaço: equipar    F: vender    Q/E: aba    Esc: fechar";
+                    footer.text = "↑↓: item    ←→: personagem    Enter/Espaço: equipar    F: vender    Tab ou Q/E: aba    Esc: fechar";
                     break;
                 case Tab.Items:
                     RenderItems();
                     footer.text = pickingTarget
                         ? "←→/↑↓: escolher aliado    Enter/Espaço: usar    Esc: voltar"
-                        : "↑↓: item    Enter/Espaço: usar    Q/E: aba    Esc: fechar";
+                        : "↑↓: item    Enter/Espaço: usar    Tab ou Q/E: aba    Esc: fechar";
                     break;
                 case Tab.Options:
                     RenderOptions();
-                    footer.text = "↑↓: opção    ←→: ajustar    Enter/Espaço: alternar    Q/E: aba    Esc: fechar";
+                    footer.text = "↑↓: opção    ←→: ajustar    Enter/Espaço: alternar    Tab ou Q/E: aba    Esc: fechar";
                     break;
                 case Tab.Jobs:
                     RenderJobs();
                     footer.text = jobsMode switch
                     {
-                        JobsMode.JobList => "↑↓: job    ←→: personagem    Enter/Espaço: opções    Q/E: aba    Esc: fechar",
+                        JobsMode.JobList => "↑↓: job    ←→: personagem    Enter/Espaço: opções    Tab ou Q/E: aba    Esc: fechar",
                         JobsMode.JobActions => "↑↓: opção    Enter/Espaço: confirmar    Esc: voltar",
                         _ => "↑↓: habilidade    Enter/Espaço: aprender / equipar passiva    Esc: voltar",
                     };
